@@ -28,7 +28,7 @@ pub enum Type<Ann> {
     Unsolved {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
-        name: String,
+        name: i32,
     },
     /// Syntactic type variables.
     Variable {
