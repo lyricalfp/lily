@@ -68,9 +68,10 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
                 r#type: Rc::clone(&application_type),
             };
 
-            let e = vec![argument_elem, function_elem, application_elem];
-
-            state.context.unsafe_unsolved_replace(u, e);
+            state.context.unsafe_unsolved_replace(
+                u,
+                Vec::from([argument_elem, function_elem, application_elem]),
+            );
             solve(state, *ann, function_name, Rc::clone(function))?;
             solve(
                 state,
