@@ -2,6 +2,12 @@
 use derivative::Derivative;
 use std::rc::Rc;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ApplicationVariant {
+    Type,
+    Kind,
+}
+
 /// The type of types in `lily`.
 #[derive(Debug, Derivative)]
 #[derivative(PartialEq, Eq)]
@@ -42,19 +48,11 @@ pub enum Type<Ann> {
         ann: Ann,
         name: String,
     },
-    /// Type application.
+    /// Type or kind application.
     Application {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
-        function: Rc<Type<Ann>>,
-        argument: Rc<Type<Ann>>,
-    },
-    /// Kind application.
-    ///
-    /// This type is usually synthesized by the compiler in the kind checker.
-    KindApplication {
-        #[derivative(PartialEq = "ignore")]
-        ann: Ann,
+        variant: ApplicationVariant,
         function: Rc<Type<Ann>>,
         argument: Rc<Type<Ann>>,
     },
@@ -76,11 +74,7 @@ impl<Ann> Type<Ann> {
             Type::Constructor { ann, name: _ } => ann,
             Type::Application {
                 ann,
-                function: _,
-                argument: _,
-            } => ann,
-            Type::KindApplication {
-                ann,
+                variant: _,
                 function: _,
                 argument: _,
             } => ann,
