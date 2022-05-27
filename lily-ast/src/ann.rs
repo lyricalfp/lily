@@ -11,6 +11,7 @@ pub struct SourceRange {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct SourceAnn {
-    pub range: SourceRange,
+pub enum SourceAnn {
+    FromAbyss,
+    FromSource(SourceRange),
 }
