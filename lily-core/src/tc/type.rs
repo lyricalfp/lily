@@ -86,9 +86,51 @@ impl TypeChecker {
             }
             Type::KindApplication {
                 ann: _,
-                function: _,
-                argument: _,
-            } => todo!(),
+                function,
+                argument,
+            } => {
+                let kind = Rc::new(Some(Type::Constructor {
+                    ann: (),
+                    name: "Type".into(),
+                }));
+
+                let function_name = self.fresh.fresh() as i32;
+                let function_type = Rc::new(Type::Unsolved {
+                    ann: (),
+                    name: function_name,
+                });
+                let function_elem = Box::new(Element::Unsolved {
+                    name: function_name,
+                    kind: Rc::clone(&kind),
+                });
+
+                let argument_name = self.fresh.fresh() as i32;
+                let argument_type = Rc::new(Type::Unsolved {
+                    ann: (),
+                    name: argument_name,
+                });
+                let argument_elem = Box::new(Element::Unsolved {
+                    name: argument_name,
+                    kind: Rc::clone(&kind),
+                });
+
+                let application_type = Rc::new(Type::KindApplication {
+                    ann: (),
+                    function: Rc::clone(&function_type),
+                    argument: Rc::clone(&argument_type),
+                });
+                let application_elem = Box::new(Element::Solved {
+                    name: u,
+                    kind: Rc::clone(&kind),
+                    r#type: Rc::clone(&application_type),
+                });
+
+                let e = vec![argument_elem, function_elem, application_elem];
+
+                self.context.unsolved_with_elems(u, e);
+                self.solve(function_name, Rc::clone(function))?;
+                self.solve(argument_name, self.context.apply(Rc::clone(argument)))
+            }
         }
     }
 }
