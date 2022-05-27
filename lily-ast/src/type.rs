@@ -11,7 +11,7 @@ pub enum Type<Ann> {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
         name: String,
-        kind: Option<Rc<Type<Ann>>>,
+        kind: Rc<Option<Type<Ann>>>,
         r#type: Rc<Type<Ann>>,
     },
     /// Skolem type variables.
@@ -105,11 +105,13 @@ mod tests {
         let x = Type::Forall {
             ann: 0,
             name: "a".into(),
-            kind: Rc::new(Type::Constructor {
-                ann: 0,
-                name: "Type".into(),
-            })
-            .into(),
+            kind: Rc::new(
+                Type::Constructor {
+                    ann: 0,
+                    name: "Type".into(),
+                }
+                .into(),
+            ),
             r#type: Rc::new(Type::Variable {
                 ann: 0,
                 name: "a".into(),
@@ -119,11 +121,13 @@ mod tests {
         let y = Type::Forall {
             ann: 1,
             name: "a".into(),
-            kind: Rc::new(Type::Constructor {
-                ann: 2,
-                name: "Type".into(),
-            })
-            .into(),
+            kind: Rc::new(
+                Type::Constructor {
+                    ann: 2,
+                    name: "Type".into(),
+                }
+                .into(),
+            ),
             r#type: Rc::new(Type::Variable {
                 ann: 3,
                 name: "a".into(),
