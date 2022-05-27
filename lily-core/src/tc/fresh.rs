@@ -1,11 +1,6 @@
+#[derive(Default)]
 pub struct Fresh {
     index: i32,
-}
-
-impl Default for Fresh {
-    fn default() -> Self {
-        Fresh { index: 0 }
-    }
 }
 
 impl Fresh {

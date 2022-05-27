@@ -14,16 +14,16 @@ pub struct State {
     fresh: Fresh,
 }
 
-pub type FreshUnsolved = (i32, Rc<SourceType>, Box<Element>);
+pub type FreshUnsolved = (i32, Rc<SourceType>, Element);
 
 impl State {
     pub fn fresh_unsolved(&mut self, kind: &Rc<Option<SourceType>>) -> FreshUnsolved {
         let name = self.fresh.fresh();
         let r#type = Rc::new(Type::Unsolved { ann: (), name });
-        let elem = Box::new(Element::Unsolved {
+        let elem = Element::Unsolved {
             name,
             kind: Rc::clone(kind),
-        });
+        };
         (name, r#type, elem)
     }
 }

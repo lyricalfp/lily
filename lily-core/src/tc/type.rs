@@ -23,8 +23,10 @@ pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String>
         // Trivial
         Type::Skolem { ann: _, name: _ }
         | Type::Variable { ann: _, name: _ }
-        | Type::Constructor { ann: _, name: _ } => Ok(state.context.unsolved_with(u, t)),
-
+        | Type::Constructor { ann: _, name: _ } => {
+            state.context.unsolved_with(u, t);
+            Ok(())
+        }
         // Disallowed
         Type::Forall {
             ann: _,
@@ -36,11 +38,13 @@ pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String>
         // Allowed
         Type::Unsolved { ann: _, name: v } => {
             if state.context.unsolved_order(u, *v) {
-                Ok(state
+                state
                     .context
-                    .unsolved_with(*v, Rc::new(Type::Unsolved { ann: (), name: u })))
+                    .unsolved_with(*v, Rc::new(Type::Unsolved { ann: (), name: u }));
+                Ok(())
             } else {
-                Ok(state.context.unsolved_with(u, t))
+                state.context.unsolved_with(u, t);
+                Ok(())
             }
         }
 

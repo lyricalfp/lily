@@ -40,7 +40,7 @@ pub enum Element {
 /// The context consumed by the type checker.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Context {
-    elements: Vec<Box<Element>>,
+    elements: Vec<Element>,
 }
 
 impl Default for Context {
@@ -54,12 +54,12 @@ impl Default for Context {
 /// Associated operations for the ordered context.
 impl Context {
     /// Inserts a `value` to the context.
-    pub fn push(&mut self, value: Element) -> () {
-        self.elements.push(Box::new(value));
+    pub fn push(&mut self, value: Element) {
+        self.elements.push(value);
     }
 
     /// Removes entries up to a provided `value`.
-    pub fn discard(&mut self, value: Element) -> () {
+    pub fn discard(&mut self, value: Element) {
         match self.position(&value) {
             Some(index) => {
                 self.elements.truncate(index);
@@ -74,7 +74,7 @@ impl Context {
     pub fn position(&self, value: &Element) -> Option<usize> {
         self.elements
             .iter()
-            .position(|current| current.as_ref() == value)
+            .position(|current| current == value)
     }
 
     /// Determines the position of an unsolved element.
@@ -82,7 +82,7 @@ impl Context {
         self.elements
             .iter()
             .enumerate()
-            .find_map(|(index, current)| match current.as_ref() {
+            .find_map(|(index, current)| match current {
                 Element::Unsolved { name, kind } => {
                     if name == &value {
                         Some((index, Rc::clone(kind)))
@@ -101,10 +101,10 @@ impl Context {
     }
 
     /// Replace an unsolved variable in the context with a solved one.
-    pub fn unsolved_with(&mut self, name: i32, r#type: Rc<SourceType>) -> () {
+    pub fn unsolved_with(&mut self, name: i32, r#type: Rc<SourceType>) {
         match self.unsolved_position(name) {
             Some((index, kind)) => {
-                *self.elements[index] = Element::Solved { name, kind, r#type };
+                self.elements[index] = Element::Solved { name, kind, r#type };
             }
             None => {
                 eprintln!("Context::discard - {:?} does not exist in the context. No operation has been performed.", name);
@@ -113,7 +113,7 @@ impl Context {
     }
 
     /// Replace an unsolved variable in the context with other elements.
-    pub fn unsolved_with_elems(&mut self, name: i32, elems: Vec<Box<Element>>) -> () {
+    pub fn unsolved_with_elems(&mut self, name: i32, elems: Vec<Element>) {
         match self.unsolved_position(name) {
             Some((index, _)) => {
                 self.elements.splice(index..index + 1, elems);
@@ -133,11 +133,11 @@ mod macros {
     #[macro_export]
     macro_rules! make_solved {
         ($name:expr, $kind:expr, $type:expr) => {
-            Box::new(Element::Solved {
+            Element::Solved {
                 name: $name,
                 kind: Rc::clone(&$kind),
                 r#type: Rc::clone(&$type),
-            })
+            }
         };
     }
 }
