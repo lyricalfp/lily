@@ -36,7 +36,7 @@ pub enum Expr<Ann> {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
         argument: String,
-        expression: Rc<Expr<Ann>>,
+        expr: Rc<Expr<Ann>>,
     },
     /// Function application.
     Application {
@@ -49,7 +49,7 @@ pub enum Expr<Ann> {
     Annotation {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
-        expression: Rc<Expr<Ann>>,
+        expr: Rc<Expr<Ann>>,
         r#type: Rc<Type<Ann>>,
         /// Determines whether or not an annotated expression needs to
         /// be checked by the type checker. If not, these expressions
@@ -62,7 +62,7 @@ pub enum Expr<Ann> {
         ann: Ann,
         name: String,
         value: Rc<Expr<Ann>>,
-        expression: Rc<Expr<Ann>>,
+        expr: Rc<Expr<Ann>>,
     },
 }
 
@@ -74,7 +74,7 @@ impl<Ann> Expr<Ann> {
             Expr::Lambda {
                 ann,
                 argument: _,
-                expression: _,
+                expr: _,
             } => ann,
             Expr::Application {
                 ann,
@@ -83,7 +83,7 @@ impl<Ann> Expr<Ann> {
             } => ann,
             Expr::Annotation {
                 ann,
-                expression: _,
+                expr: _,
                 r#type: _,
                 checked: _,
             } => ann,
@@ -91,7 +91,7 @@ impl<Ann> Expr<Ann> {
                 ann,
                 name: _,
                 value: _,
-                expression: _,
+                expr: _,
             } => ann,
         }
     }
@@ -106,7 +106,7 @@ mod tests {
         let x = Expr::Lambda {
             ann: 0,
             argument: "a".into(),
-            expression: Rc::new(Expr::Variable {
+            expr: Rc::new(Expr::Variable {
                 ann: 0,
                 name: "a".into(),
             }),
@@ -114,7 +114,7 @@ mod tests {
         let y = Expr::Lambda {
             ann: 1,
             argument: "a".into(),
-            expression: Rc::new(Expr::Variable {
+            expr: Rc::new(Expr::Variable {
                 ann: 2,
                 name: "a".into(),
             }),
