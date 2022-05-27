@@ -17,6 +17,10 @@ where
 {
     match e {
         Expr::Literal { ann: _, literal } => match literal {
+            Literal::Character(_) => (),
+            Literal::String(_) => (),
+            Literal::Int(_) => (),
+            Literal::Float(_) => (),
             Literal::Array(es) => {
                 for e in es.iter() {
                     visitor.visit_expr(e);
@@ -27,7 +31,6 @@ where
                     visitor.visit_expr(e);
                 }
             }
-            _ => (),
         },
         Expr::Variable { ann: _, name: _ } => (),
         Expr::Lambda {
