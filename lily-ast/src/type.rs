@@ -90,6 +90,20 @@ impl<Ann> Type<Ann> {
     }
 }
 
+pub mod macros {
+    #[macro_export]
+    macro_rules! make_application {
+        ($ann:expr, $variant:expr, $function:expr, $argument:expr) => {
+            Rc::new(Type::Application {
+                ann: *$ann,
+                variant: *$variant,
+                function: Rc::clone(&$function),
+                argument: Rc::clone(&$argument),
+            })
+        };
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
