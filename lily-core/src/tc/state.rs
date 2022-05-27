@@ -1,13 +1,11 @@
 use std::rc::Rc;
 
-use lily_ast::r#type::Type;
+use lily_ast::{r#type::{Type, SourceType}, ann::SourceAnn};
 
 use super::{
     context::{Context, Element},
     fresh::Fresh,
 };
-
-type SourceType = Type<()>;
 
 pub struct State {
     pub context: Context,
@@ -17,9 +15,9 @@ pub struct State {
 pub type FreshUnsolved = (i32, Rc<SourceType>, Element);
 
 impl State {
-    pub fn fresh_unsolved(&mut self, kind: &Rc<Option<SourceType>>) -> FreshUnsolved {
+    pub fn fresh_unsolved(&mut self, ann: SourceAnn, kind: &Rc<Option<SourceType>>) -> FreshUnsolved {
         let name = self.fresh.fresh();
-        let r#type = Rc::new(Type::Unsolved { ann: (), name });
+        let r#type = Rc::new(Type::Unsolved { ann, name });
         let elem = Element::Unsolved {
             name,
             kind: Rc::clone(kind),

@@ -2,6 +2,8 @@
 use derivative::Derivative;
 use std::rc::Rc;
 
+use super::ann::SourceAnn;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ApplicationVariant {
     Type,
@@ -57,6 +59,8 @@ pub enum Type<Ann> {
         argument: Rc<Type<Ann>>,
     },
 }
+
+pub type SourceType = Type<SourceAnn>;
 
 impl<Ann> Type<Ann> {
     /// Returns a reference to a type's annotation.

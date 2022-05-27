@@ -2,7 +2,7 @@
 //! checker.
 use std::rc::Rc;
 
-use lily_ast::r#type::Type;
+use lily_ast::r#type::SourceType;
 
 /// The default allocation size for the context. This helps reduce the
 /// number of allocations needed when we shift elements around. At
@@ -10,9 +10,6 @@ use lily_ast::r#type::Type;
 /// time, unless we're type checking a large, unannotated piece of
 /// code.
 const DEFAULT_CONTEXT_CAPACITY: usize = 512;
-
-/// TODO: remove this once we have source annotations
-type SourceType = Type<()>;
 
 /// The type of context elements.
 #[derive(Debug, PartialEq, Eq)]
@@ -124,7 +121,7 @@ impl Context {
         }
     }
 
-    pub fn apply(&self, r#_type: Rc<Type<()>>) -> Rc<Type<()>> {
+    pub fn apply(&self, r#_type: Rc<SourceType>) -> Rc<SourceType> {
         todo!()
     }
 }

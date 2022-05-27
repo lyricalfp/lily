@@ -1,13 +1,12 @@
 use std::rc::Rc;
 
-use lily_ast::r#type::Type;
+use lily_ast::ann::SourceAnn;
+use lily_ast::r#type::{SourceType, Type};
 
 use super::context::Element;
 use super::state::State;
 
-type SourceType = Type<()>;
-
-pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String> {
+pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Result<(), String> {
     match t.as_ref() {
         // Trivial
         Type::Skolem { ann: _, name: _ }
@@ -30,7 +29,7 @@ pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String>
             if state.context.unsolved_order(u, *v) {
                 state
                     .context
-                    .unsolved_with(*v, Rc::new(Type::Unsolved { ann: (), name: u }));
+                    .unsolved_with(*v, Rc::new(Type::Unsolved { ann: a, name: u }));
                 Ok(())
             } else {
                 state.context.unsolved_with(u, t);
@@ -49,8 +48,8 @@ pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String>
                 name: "Type".into(),
             }));
 
-            let (function_name, function_type, function_elem) = state.fresh_unsolved(&kind);
-            let (argument_name, argument_type, argument_elem) = state.fresh_unsolved(&kind);
+            let (function_name, function_type, function_elem) = state.fresh_unsolved(*ann, &kind);
+            let (argument_name, argument_type, argument_elem) = state.fresh_unsolved(*ann, &kind);
 
             let application_type = Rc::new(Type::Application {
                 ann: *ann,
@@ -67,9 +66,10 @@ pub fn solve(state: &mut State, u: i32, t: Rc<SourceType>) -> Result<(), String>
             let e = vec![argument_elem, function_elem, application_elem];
 
             state.context.unsolved_with_elems(u, e);
-            solve(state, function_name, Rc::clone(function))?;
+            solve(state, *ann, function_name, Rc::clone(function))?;
             solve(
                 state,
+                *ann,
                 argument_name,
                 state.context.apply(Rc::clone(argument)),
             )
