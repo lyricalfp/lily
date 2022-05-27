@@ -129,19 +129,6 @@ impl Context {
     }
 }
 
-mod macros {
-    #[macro_export]
-    macro_rules! make_solved {
-        ($name:expr, $kind:expr, $type:expr) => {
-            Element::Solved {
-                name: $name,
-                kind: Rc::clone(&$kind),
-                r#type: Rc::clone(&$type),
-            }
-        };
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
