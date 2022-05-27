@@ -42,6 +42,11 @@ impl TypeChecker {
                 function,
                 argument,
             } => {
+                let kind = Rc::new(Some(Type::Constructor {
+                    ann: (),
+                    name: "Type".into(),
+                }));
+
                 let function_name = self.fresh.fresh() as i32;
                 let function_type = Rc::new(Type::Unsolved {
                     ann: (),
@@ -49,10 +54,7 @@ impl TypeChecker {
                 });
                 let function_elem = Box::new(Element::Unsolved {
                     name: function_name,
-                    kind: Rc::new(Some(Type::Constructor {
-                        ann: (),
-                        name: "Type".into(),
-                    })),
+                    kind: Rc::clone(&kind),
                 });
 
                 let argument_name = self.fresh.fresh() as i32;
@@ -62,10 +64,7 @@ impl TypeChecker {
                 });
                 let argument_elem = Box::new(Element::Unsolved {
                     name: argument_name,
-                    kind: Rc::new(Some(Type::Constructor {
-                        ann: (),
-                        name: "Type".into(),
-                    })),
+                    kind: Rc::clone(&kind),
                 });
 
                 let application_type = Rc::new(Type::Application {
@@ -75,10 +74,7 @@ impl TypeChecker {
                 });
                 let application_elem = Box::new(Element::Solved {
                     name: u,
-                    kind: Rc::new(Some(Type::Constructor {
-                        ann: (),
-                        name: "Type".into(),
-                    })),
+                    kind: Rc::clone(&kind),
                     r#type: Rc::clone(&application_type),
                 });
 
