@@ -11,7 +11,7 @@ pub trait Visitor: Sized {
     }
 }
 
-fn walk_expr<V, Ann>(visitor: &mut V, e: &Expr<Ann>)
+pub fn walk_expr<V, Ann>(visitor: &mut V, e: &Expr<Ann>)
 where
     V: Visitor,
 {
@@ -67,7 +67,7 @@ where
     }
 }
 
-fn walk_type<V, Ann>(visitor: &mut V, t: &Type<Ann>)
+pub fn walk_type<V, Ann>(visitor: &mut V, t: &Type<Ann>)
 where
     V: Visitor,
 {
