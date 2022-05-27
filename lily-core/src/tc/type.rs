@@ -12,7 +12,8 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
         Type::Skolem { ann: _, name: _ }
         | Type::Variable { ann: _, name: _ }
         | Type::Constructor { ann: _, name: _ } => {
-            state.context.unsolved_with(u, t);
+            state.context.type_is_well_formed_before_unsolved(t, u);
+            state.context.unsafe_solve(u, t);
             Ok(())
         }
 
@@ -26,13 +27,13 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
 
         // Allowed
         Type::Unsolved { ann: _, name: v } => {
-            if state.context.unsolved_order(u, *v) {
+            if state.context.unsafe_unsolved_appears_before(u, *v) {
                 state
                     .context
-                    .unsolved_with(*v, Rc::new(Type::Unsolved { ann: a, name: u }));
+                    .unsafe_solve(*v, Rc::new(Type::Unsolved { ann: a, name: u }));
                 Ok(())
             } else {
-                state.context.unsolved_with(u, t);
+                state.context.unsafe_solve(u, t);
                 Ok(())
             }
         }
@@ -65,7 +66,7 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
 
             let e = vec![argument_elem, function_elem, application_elem];
 
-            state.context.unsolved_with_elems(u, e);
+            state.context.unsafe_unsolved_replace(u, e);
             solve(state, *ann, function_name, Rc::clone(function))?;
             solve(
                 state,

@@ -50,109 +50,94 @@ impl Default for Context {
 
 /// Associated operations for the ordered context.
 impl Context {
-    /// Inserts a `value` to the context.
-    pub fn push(&mut self, value: Element) {
-        self.elements.push(value);
-    }
-
-    /// Removes entries up to a provided `value`.
-    pub fn discard(&mut self, value: Element) {
-        match self.position(&value) {
-            Some(index) => {
-                self.elements.truncate(index);
-            }
-            None => {
-                eprintln!("Context::discard - {:?} does not exist in the context. No operation has been performed.", value);
-            }
-        }
-    }
-
-    /// Determines the position of a provided `value`.
-    pub fn position(&self, value: &Element) -> Option<usize> {
-        self.elements
-            .iter()
-            .position(|current| current == value)
-    }
-
-    /// Determines the position of an unsolved element.
-    pub fn unsolved_position(&self, value: i32) -> Option<(usize, Rc<Option<SourceType>>)> {
+    /// Determines the index and kind of an [`Unsolved`] variable.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the variable does not exist in the context.
+    ///
+    /// [`Unsolved`]: Element::Unsolved
+    pub fn unsafe_unsolved_position(&self, expected_name: i32) -> (usize, Rc<Option<SourceType>>) {
         self.elements
             .iter()
             .enumerate()
-            .find_map(|(index, current)| match current {
-                Element::Unsolved { name, kind } => {
-                    if name == &value {
+            .find_map(|(index, current)| {
+                if let Element::Unsolved { name, kind } = current {
+                    if *name == expected_name {
                         Some((index, Rc::clone(kind)))
                     } else {
                         None
                     }
+                } else {
+                    None
                 }
-                _ => None,
             })
+            .expect("todo!")
     }
 
-    /// Determines whether an unsolved variable appears before another.
-    pub fn unsolved_order(&self, a: i32, b: i32) -> bool {
-        self.unsolved_position(a).map(|(i, _)| i).unwrap_or(0)
-            < self.unsolved_position(b).map(|(i, _)| i).unwrap_or(0)
+    /// Determines whether an [`Unsolved`] variable appears before another.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the variable does not exist in the context.
+    ///
+    /// [`Unsolved`]: Element::Unsolved
+    pub fn unsafe_unsolved_appears_before(&self, a: i32, b: i32) -> bool {
+        let (a, _) = self.unsafe_unsolved_position(a);
+        let (b, _) = self.unsafe_unsolved_position(b);
+        a < b
     }
 
-    /// Replace an unsolved variable in the context with a solved one.
-    pub fn unsolved_with(&mut self, name: i32, r#type: Rc<SourceType>) {
-        match self.unsolved_position(name) {
-            Some((index, kind)) => {
-                self.elements[index] = Element::Solved { name, kind, r#type };
-            }
-            None => {
-                eprintln!("Context::discard - {:?} does not exist in the context. No operation has been performed.", name);
-            }
-        }
+    /// Replaces an [`Unsolved`] variable with a [`Solved`] one.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the variable does not exist in the context.
+    ///
+    /// [`Unsolved`]: Element::Unsolved
+    /// [`Solved`]: Element::Solved
+    pub fn unsafe_solve(&mut self, name: i32, r#type: Rc<SourceType>) {
+        let (index, kind) = self.unsafe_unsolved_position(name);
+        self.elements[index] = Element::Solved { name, kind, r#type }
     }
 
-    /// Replace an unsolved variable in the context with other elements.
-    pub fn unsolved_with_elems(&mut self, name: i32, elems: Vec<Element>) {
-        match self.unsolved_position(name) {
-            Some((index, _)) => {
-                self.elements.splice(index..index + 1, elems);
-            }
-            None => {
-                eprintln!("Context::discard - {:?} does not exist in the context. No operation has been performed.", name);
-            }
-        }
+    /// Replaces an [`Unsolved`] variable with other [`Element`] elements.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the variable does not exist in the context.
+    ///
+    /// [`Unsolved`]: Element::Unsolved
+    /// [`Element`]: Element
+    pub fn unsafe_unsolved_replace(&mut self, name: i32, elements: Vec<Element>) {
+        let (index, _) = self.unsafe_unsolved_position(name);
+        self.elements.splice(index..index + 1, elements);
     }
 
     pub fn apply(&self, r#_type: Rc<SourceType>) -> Rc<SourceType> {
         todo!()
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn create_context() {
-        let _ = Context::default();
+    /// Determines whether a [`SourceType`] is well-formed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the type is not well-formed.
+    pub fn type_is_well_formed(&self, _t: Rc<SourceType>) {
+        todo!()
     }
 
-    #[test]
-    fn push_context() {
-        let mut context = Context::default();
-
-        context.push(Element::Marker { name: "a".into() });
-        context.push(Element::Marker { name: "b".into() });
-
-        assert_eq!(context.elements.len(), 2);
-    }
-
-    #[test]
-    fn discard_context() {
-        let mut context = Context::default();
-
-        context.push(Element::Marker { name: "a".into() });
-        context.push(Element::Marker { name: "b".into() });
-        context.discard(Element::Marker { name: "a".into() });
-
-        assert_eq!(context.elements.len(), 0);
+    /// Determines whether a [`SourceType`] is well-formed before an
+    /// [`Unsolved`] variable.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the variable does not exist in the context, or if
+    /// the type is not well-formed.
+    ///
+    /// [`Unsolved`]: Element::Unsolved
+    /// [`SourceType`]: lily_ast::type::SourceType
+    pub fn type_is_well_formed_before_unsolved(&self, _t: Rc<SourceType>, _u: i32) {
+        todo!()
     }
 }
