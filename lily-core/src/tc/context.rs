@@ -11,6 +11,12 @@ use lily_ast::r#type::SourceType;
 /// code.
 const DEFAULT_CONTEXT_CAPACITY: usize = 512;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum VariableVariant {
+    Skolem,
+    Syntactic,
+}
+
 /// The type of context elements.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Element {
@@ -18,6 +24,7 @@ pub enum Element {
     Variable {
         name: String,
         kind: Rc<Option<SourceType>>,
+        variant: VariableVariant,
     },
     /// Unification variables.
     Unsolved {
