@@ -6,16 +6,16 @@ use super::Visitor;
 
 #[derive(Default)]
 pub struct TypeVariablesGathered<'ast> {
-    pub syntactic: HashSet<&'ast String>,
-    pub skolem: HashSet<&'ast String>,
+    pub syntactic: HashSet<&'ast str>,
+    pub skolem: HashSet<&'ast str>,
     pub unification: HashSet<&'ast i32>,
 }
 
 impl<'ast> TypeVariablesGathered<'ast> {
-    pub fn contains_syntactic_variable(&self, value: String) -> bool {
+    pub fn contains_syntactic_variable(&self, value: &str) -> bool {
         self.syntactic.contains(&value)
     }
-    pub fn contains_skolem_variable(&self, value: String) -> bool {
+    pub fn contains_skolem_variable(&self, value: &str) -> bool {
         self.skolem.contains(&value)
     }
     pub fn contains_unification_variable(&self, value: i32) -> bool {

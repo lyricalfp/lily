@@ -131,8 +131,8 @@ impl Context {
     {
         let variables = TypeVariableVisitor::from_type(r#type);
 
-        let mut syntactic: HashSet<&String> = HashSet::default();
-        let mut skolem: HashSet<&String> = HashSet::default();
+        let mut syntactic: HashSet<&str> = HashSet::default();
+        let mut skolem: HashSet<&str> = HashSet::default();
         let mut unification: HashSet<&i32> = HashSet::default();
 
         for element in elements {
