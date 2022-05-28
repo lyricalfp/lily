@@ -11,18 +11,6 @@ pub struct TypeVariablesGathered<'ast> {
     pub unification: HashSet<&'ast i32>,
 }
 
-impl<'ast> TypeVariablesGathered<'ast> {
-    pub fn contains_syntactic_variable(&self, value: &str) -> bool {
-        self.syntactic.contains(&value)
-    }
-    pub fn contains_skolem_variable(&self, value: &str) -> bool {
-        self.skolem.contains(&value)
-    }
-    pub fn contains_unification_variable(&self, value: i32) -> bool {
-        self.unification.contains(&value)
-    }
-}
-
 #[derive(Default)]
 pub struct TypeVariableVisitor<'ast> {
     variables: TypeVariablesGathered<'ast>,
