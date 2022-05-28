@@ -8,13 +8,13 @@ use crate::r#type::Type;
 use super::Traversal;
 
 #[derive(Default)]
-pub struct ReplaceVariablesTraversal<'a, Ann> {
+pub struct TypeVariableTraversal<'a, Ann> {
     syntactic: HashMap<&'a str, Rc<Type<Ann>>>,
     unification: HashMap<&'a i32, Rc<Type<Ann>>>,
     in_scope: HashSet<String>,
 }
 
-impl<Ann> Traversal<Ann> for ReplaceVariablesTraversal<'_, Ann> {
+impl<Ann> Traversal<Ann> for TypeVariableTraversal<'_, Ann> {
     fn traverse_type(&mut self, t: Rc<Type<Ann>>) -> Rc<Type<Ann>>
     where
         Ann: Copy,
