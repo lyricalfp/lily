@@ -19,7 +19,7 @@ pub enum Type<Ann> {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
         name: String,
-        kind: Rc<Option<Type<Ann>>>,
+        kind: Option<Rc<Type<Ann>>>,
         r#type: Rc<Type<Ann>>,
     },
     /// Skolem type variables.
