@@ -1,19 +1,19 @@
 use super::expr::{Expr, Literal};
 use super::r#type::Type;
 
-pub trait Visitor: Sized {
-    fn visit_expr<Ann>(&mut self, e: &Expr<Ann>) {
+pub trait Visitor<'ast>: Sized {
+    fn visit_expr<Ann>(&mut self, e: &'ast Expr<Ann>) {
         walk_expr(self, e)
     }
 
-    fn visit_type<Ann>(&mut self, t: &Type<Ann>) {
+    fn visit_type<Ann>(&mut self, t: &'ast Type<Ann>) {
         walk_type(self, t)
     }
 }
 
-pub fn walk_expr<V, Ann>(visitor: &mut V, e: &Expr<Ann>)
+pub fn walk_expr<'ast, V, Ann>(visitor: &mut V, e: &'ast Expr<Ann>)
 where
-    V: Visitor,
+    V: Visitor<'ast>,
 {
     match e {
         Expr::Literal { ann: _, literal } => match literal {
@@ -67,9 +67,9 @@ where
     }
 }
 
-pub fn walk_type<V, Ann>(visitor: &mut V, t: &Type<Ann>)
+pub fn walk_type<'ast, V, Ann>(visitor: &mut V, t: &'ast Type<Ann>)
 where
-    V: Visitor,
+    V: Visitor<'ast>,
 {
     match t {
         Type::Forall {
