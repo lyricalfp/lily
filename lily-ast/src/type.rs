@@ -58,6 +58,13 @@ pub enum Type<Ann> {
         function: Rc<Type<Ann>>,
         argument: Rc<Type<Ann>>,
     },
+    /// The primitive function type.
+    Function {
+        #[derivative(PartialEq = "ignore")]
+        ann: Ann,
+        argument: Rc<Type<Ann>>,
+        result: Rc<Type<Ann>>,
+    }
 }
 
 pub type SourceType = Type<SourceAnn>;
@@ -82,6 +89,7 @@ impl<Ann> Type<Ann> {
                 function: _,
                 argument: _,
             } => ann,
+            Type::Function { ann, argument: _, result: _ } => ann,
         }
     }
 

@@ -74,6 +74,10 @@ impl<'ast> Visitor<'ast> for TypeVariableVisitor<'ast> {
                 super::walk_type(self, function);
                 super::walk_type(self, argument);
             }
+            Type::Function { ann: _, argument, result } => {
+                super::walk_type(self, argument);
+                super::walk_type(self, result);
+            },
         }
     }
 
