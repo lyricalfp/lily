@@ -14,7 +14,7 @@ pub struct TypeVariablesGathered<'ast> {
 #[derive(Default)]
 pub struct TypeVariableVisitor<'ast> {
     variables: TypeVariablesGathered<'ast>,
-    in_scope: HashSet<&'ast String>,
+    in_scope: HashSet<&'ast str>,
 }
 
 impl<'ast> TypeVariableVisitor<'ast> {
@@ -37,9 +37,9 @@ impl<'ast> Visitor<'ast> for TypeVariableVisitor<'ast> {
                 if let Some(kind) = kind.as_ref() {
                     super::walk_type(self, kind)
                 };
-                self.in_scope.insert(name);
+                self.in_scope.insert(name.as_str());
                 super::walk_type(self, r#type);
-                self.in_scope.remove(name);
+                self.in_scope.remove(name.as_str());
             }
             Type::Skolem { ann: _, name } => {
                 self.variables.skolem.insert(name);
@@ -48,7 +48,7 @@ impl<'ast> Visitor<'ast> for TypeVariableVisitor<'ast> {
                 self.variables.unification.insert(name);
             }
             Type::Variable { ann: _, name } => {
-                if !self.in_scope.contains(name) {
+                if !self.in_scope.contains(name.as_str()) {
                     self.variables.syntactic.insert(name);
                 }
             }
