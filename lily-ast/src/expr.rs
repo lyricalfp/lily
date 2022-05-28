@@ -96,30 +96,3 @@ impl<Ann> Expr<Ann> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn ann_is_ignored_in_eq() {
-        let x = Expr::Lambda {
-            ann: 0,
-            argument: "a".into(),
-            expr: Rc::new(Expr::Variable {
-                ann: 0,
-                name: "a".into(),
-            }),
-        };
-        let y = Expr::Lambda {
-            ann: 1,
-            argument: "a".into(),
-            expr: Rc::new(Expr::Variable {
-                ann: 2,
-                name: "a".into(),
-            }),
-        };
-
-        assert_eq!(x, y);
-    }
-}
