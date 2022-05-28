@@ -3,15 +3,17 @@ use std::rc::Rc;
 use super::expr::{Expr, Literal};
 use super::r#type::Type;
 
-pub trait Traversal: Sized {
-    fn traverse_expr<Ann>(&mut self, e: Rc<Expr<Ann>>) -> Rc<Expr<Ann>>
+pub mod common;
+
+pub trait Traversal<Ann>: Sized {
+    fn traverse_expr(&mut self, e: Rc<Expr<Ann>>) -> Rc<Expr<Ann>>
     where
         Ann: Copy,
     {
         walk_expr(self, e)
     }
 
-    fn traverse_type<Ann>(&mut self, t: Rc<Type<Ann>>) -> Rc<Type<Ann>>
+    fn traverse_type(&mut self, t: Rc<Type<Ann>>) -> Rc<Type<Ann>>
     where
         Ann: Copy,
     {
@@ -21,7 +23,7 @@ pub trait Traversal: Sized {
 
 pub fn walk_expr<T, Ann>(traversal: &mut T, e: Rc<Expr<Ann>>) -> Rc<Expr<Ann>>
 where
-    T: Traversal,
+    T: Traversal<Ann>,
     Ann: Copy,
 {
     match e.as_ref() {
@@ -93,7 +95,7 @@ where
 
 pub fn walk_type<T, Ann>(traversal: &mut T, t: Rc<Type<Ann>>) -> Rc<Type<Ann>>
 where
-    T: Traversal,
+    T: Traversal<Ann>,
     Ann: Copy,
 {
     match t.as_ref() {
