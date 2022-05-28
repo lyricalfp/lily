@@ -23,7 +23,7 @@ pub enum Expr<Ann> {
     Literal {
         #[derivative(PartialEq = "ignore")]
         ann: Ann,
-        literal: Literal<Expr<Ann>>,
+        literal: Literal<Rc<Expr<Ann>>>,
     },
     /// Term variables.
     Variable {
