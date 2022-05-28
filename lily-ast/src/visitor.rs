@@ -80,8 +80,8 @@ where
             kind,
             r#type,
         } => {
-            if let Some(kind) = kind.as_ref() {
-                visitor.visit_type(kind)
+            if let Some(kind) = kind {
+                visitor.visit_type(kind);
             };
             visitor.visit_type(r#type);
         }
