@@ -1,6 +1,8 @@
 use super::expr::{Expr, Literal};
 use super::r#type::Type;
 
+pub mod common;
+
 pub trait Visitor<'ast>: Sized {
     fn visit_expr<Ann>(&mut self, e: &'ast Expr<Ann>) {
         walk_expr(self, e)
