@@ -6,9 +6,9 @@ use super::Visitor;
 
 #[derive(Default)]
 pub struct TypeVariablesGathered<'ast> {
-    syntactic: HashSet<&'ast String>,
-    skolem: HashSet<&'ast String>,
-    unification: HashSet<&'ast i32>,
+    pub syntactic: HashSet<&'ast String>,
+    pub skolem: HashSet<&'ast String>,
+    pub unification: HashSet<&'ast i32>,
 }
 
 impl<'ast> TypeVariablesGathered<'ast> {
