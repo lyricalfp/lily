@@ -14,8 +14,8 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
         | Type::Constructor { ann: _, name: _ } => {
             state
                 .context
-                .type_is_well_formed_before_unsolved(Rc::clone(&t), u);
-            state.context.unsafe_solve(u, Rc::clone(&t));
+                .type_is_well_formed_before_unsolved(&t, u);
+            state.context.unsafe_solve(u, t);
             Ok(())
         }
 

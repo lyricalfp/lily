@@ -1,8 +1,8 @@
 //! Defines the type of the ordered context consumed by the type
 //! checker.
-use std::rc::Rc;
+use std::{collections::HashSet, rc::Rc};
 
-use lily_ast::r#type::SourceType;
+use lily_ast::{r#type::SourceType, visitor::common::TypeVariableVisitor};
 
 /// The default allocation size for the context. This helps reduce the
 /// number of allocations needed when we shift elements around. At
@@ -125,13 +125,64 @@ impl Context {
         todo!()
     }
 
+    fn type_is_well_formed_common<'a, I>(&self, r#type: &SourceType, elements: I)
+    where
+        I: Iterator<Item = &'a Element>,
+    {
+        let variables = TypeVariableVisitor::from_type(r#type);
+
+        let mut syntactic: HashSet<&String> = HashSet::default();
+        let mut skolem: HashSet<&String> = HashSet::default();
+        let mut unification: HashSet<&i32> = HashSet::default();
+
+        for element in elements {
+            match element {
+                Element::Variable {
+                    name,
+                    kind: _,
+                    variant,
+                } => match variant {
+                    VariableVariant::Skolem => {
+                        skolem.insert(name);
+                    }
+                    VariableVariant::Syntactic => {
+                        syntactic.insert(name);
+                    }
+                },
+                Element::Unsolved { name, kind: _ } => {
+                    unification.insert(name);
+                }
+                Element::Solved {
+                    name,
+                    kind: _,
+                    r#type: _,
+                } => {
+                    unification.insert(name);
+                }
+                _ => (),
+            }
+        }
+
+        for _ in variables.syntactic.difference(&syntactic) {
+            panic!("unknown type variable");
+        }
+
+        for _ in variables.skolem.difference(&skolem) {
+            panic!("escaped skolem variable");
+        }
+
+        for _ in variables.unification.difference(&unification) {
+            panic!("unknown unification variable");
+        }
+    }
+
     /// Determines whether a [`SourceType`] is well-formed.
     ///
     /// # Panics
     ///
     /// Panics if the type is not well-formed.
-    pub fn type_is_well_formed(&self, _t: Rc<SourceType>) {
-        todo!()
+    pub fn type_is_well_formed(&self, r#type: &SourceType) {
+        self.type_is_well_formed_common(r#type, self.elements.iter());
     }
 
     /// Determines whether a [`SourceType`] is well-formed before an
@@ -144,7 +195,13 @@ impl Context {
     ///
     /// [`Unsolved`]: Element::Unsolved
     /// [`SourceType`]: lily_ast::type::SourceType
-    pub fn type_is_well_formed_before_unsolved(&self, _t: Rc<SourceType>, _u: i32) {
-        todo!()
+    pub fn type_is_well_formed_before_unsolved(&self, r#type: &SourceType, until: i32) {
+        self.type_is_well_formed_common(
+            r#type,
+            self.elements.iter().take_while(|element| match element {
+                Element::Unsolved { name, kind: _ } => *name != until,
+                _ => true,
+            }),
+        )
     }
 }
