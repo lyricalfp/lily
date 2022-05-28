@@ -12,9 +12,7 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
         Type::Skolem { ann: _, name: _ }
         | Type::Variable { ann: _, name: _ }
         | Type::Constructor { ann: _, name: _ } => {
-            state
-                .context
-                .type_is_well_formed_before_unsolved(&t, u);
+            state.context.type_is_well_formed_before_unsolved(&t, u);
             state.context.unsafe_solve(u, t);
             Ok(())
         }
@@ -56,16 +54,15 @@ pub fn solve(state: &mut State, a: SourceAnn, u: i32, t: Rc<SourceType>) -> Resu
             let (argument_name, argument_type, argument_elem) =
                 state.fresh_unsolved(*ann, Rc::clone(&kind));
 
-            let application_type = Rc::new(Type::Application {
-                ann: *ann,
-                variant: *variant,
-                function: Rc::clone(&function_type),
-                argument: Rc::clone(&argument_type),
-            });
             let application_elem = Element::Solved {
                 name: u,
                 kind: Rc::clone(&kind),
-                r#type: Rc::clone(&application_type),
+                r#type: Rc::new(Type::Application {
+                    ann: *ann,
+                    variant: *variant,
+                    argument: argument_type,
+                    function: function_type,
+                }),
             };
 
             state.context.unsafe_unsolved_replace(
