@@ -25,8 +25,8 @@ impl<'ast> TypeVariableVisitor<'ast> {
     }
 }
 
-impl<'ast> Visitor<'ast> for TypeVariableVisitor<'ast> {
-    fn visit_type<Ann>(&mut self, t: &'ast Type<Ann>) {
+impl<'ast, Ann> Visitor<'ast, Ann> for TypeVariableVisitor<'ast> {
+    fn visit_type(&mut self, t: &'ast Type<Ann>) {
         match t {
             Type::Forall {
                 ann: _,
@@ -69,7 +69,7 @@ impl<'ast> Visitor<'ast> for TypeVariableVisitor<'ast> {
         }
     }
 
-    fn visit_expr<Ann>(&mut self, e: &'ast crate::expr::Expr<Ann>) {
+    fn visit_expr(&mut self, e: &'ast crate::expr::Expr<Ann>) {
         super::walk_expr(self, e)
     }
 }
