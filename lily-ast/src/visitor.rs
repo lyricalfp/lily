@@ -98,9 +98,13 @@ where
             visitor.visit_type(function);
             visitor.visit_type(argument);
         }
-        Type::Function { ann: _, argument, result } => {
+        Type::Function {
+            ann: _,
+            argument,
+            result,
+        } => {
             visitor.visit_type(argument);
             visitor.visit_type(result);
-        },
+        }
     }
 }
