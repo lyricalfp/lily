@@ -8,10 +8,35 @@ use crate::r#type::Type;
 use super::Traversal;
 
 #[derive(Default)]
-pub struct TypeVariableTraversal<'a, Ann> {
-    syntactic: HashMap<&'a str, Rc<Type<Ann>>>,
-    unification: HashMap<&'a i32, Rc<Type<Ann>>>,
+pub struct TypeVariableTraversal<'ast, Ann> {
+    syntactic: HashMap<&'ast str, Rc<Type<Ann>>>,
+    unification: HashMap<&'ast i32, Rc<Type<Ann>>>,
     in_scope: HashSet<String>,
+}
+
+impl<'ast, Ann> TypeVariableTraversal<'ast, Ann>
+where
+    Ann: Copy,
+{
+    pub fn with_syntactic<const N: usize>(syntactic: [(&'ast str, Rc<Type<Ann>>); N]) -> Self {
+        TypeVariableTraversal {
+            syntactic: HashMap::from(syntactic),
+            unification: HashMap::default(),
+            in_scope: HashSet::default(),
+        }
+    }
+
+    pub fn with_unification<const N: usize>(unification: [(&'ast i32, Rc<Type<Ann>>); N]) -> Self {
+        TypeVariableTraversal {
+            syntactic: HashMap::default(),
+            unification: HashMap::from(unification),
+            in_scope: HashSet::default(),
+        }
+    }
+
+    pub fn on_type(mut self, t: Rc<Type<Ann>>) -> Rc<Type<Ann>> {
+        self.traverse_type(t)
+    }
 }
 
 impl<Ann> Traversal<Ann> for TypeVariableTraversal<'_, Ann> {
