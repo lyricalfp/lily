@@ -26,7 +26,9 @@ impl<Ann> Traversal<Ann> for TypeVariableTraversal<'_, Ann> {
                 kind,
                 r#type,
             } => {
-                let kind = kind.as_ref().map(|kind| super::walk_type(self, Rc::clone(kind)));
+                let kind = kind
+                    .as_ref()
+                    .map(|kind| super::walk_type(self, Rc::clone(kind)));
 
                 self.in_scope.insert(name.to_string());
                 let r#type = super::walk_type(self, Rc::clone(r#type));
@@ -39,7 +41,6 @@ impl<Ann> Traversal<Ann> for TypeVariableTraversal<'_, Ann> {
                     r#type,
                 })
             }
-            Type::Skolem { ann: _, name: _ } => t,
             Type::Unsolved { ann: _, name } => {
                 if let Some(value) = self.unification.get(name) {
                     Rc::clone(value)
@@ -54,27 +55,7 @@ impl<Ann> Traversal<Ann> for TypeVariableTraversal<'_, Ann> {
                     t
                 }
             }
-            Type::Constructor { ann: _, name: _ } => t,
-            Type::Application {
-                ann,
-                variant,
-                function,
-                argument,
-            } => Rc::new(Type::Application {
-                ann: *ann,
-                variant: *variant,
-                function: super::walk_type(self, Rc::clone(function)),
-                argument: super::walk_type(self, Rc::clone(argument)),
-            }),
-            Type::Function {
-                ann,
-                argument,
-                result,
-            } => Rc::new(Type::Function {
-                ann: *ann,
-                argument: super::walk_type(self, Rc::clone(argument)),
-                result: super::walk_type(self, Rc::clone(result)),
-            }),
+            _ => super::walk_type(self, t),
         }
     }
 }

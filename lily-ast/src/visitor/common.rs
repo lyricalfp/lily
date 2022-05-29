@@ -52,24 +52,7 @@ impl<'ast, Ann> Visitor<'ast, Ann> for TypeVariableVisitor<'ast> {
                     self.variables.syntactic.insert(name);
                 }
             }
-            Type::Constructor { ann: _, name: _ } => (),
-            Type::Application {
-                ann: _,
-                variant: _,
-                function,
-                argument,
-            } => {
-                super::walk_type(self, function);
-                super::walk_type(self, argument);
-            }
-            Type::Function { ann: _, argument, result } => {
-                super::walk_type(self, argument);
-                super::walk_type(self, result);
-            },
+            _ => super::walk_type(self, t),
         }
-    }
-
-    fn visit_expr(&mut self, e: &'ast crate::expr::Expr<Ann>) {
-        super::walk_expr(self, e)
     }
 }
