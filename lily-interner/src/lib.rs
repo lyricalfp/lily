@@ -1,4 +1,5 @@
 use std::{
+    fmt::Debug,
     hash::{Hash, Hasher},
     ptr,
 };
@@ -11,12 +12,20 @@ mod private {
     pub struct PrivateZst;
 }
 
-#[derive(Debug)]
 pub struct Interned<'a, T>(pub &'a T, pub private::PrivateZst);
 
 impl<'a, T> Interned<'a, T> {
     fn new(t: &'a T) -> Self {
         Self(t, private::PrivateZst)
+    }
+}
+
+impl<T> Debug for Interned<'_, T>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Interned").field(&self.0).finish()
     }
 }
 
