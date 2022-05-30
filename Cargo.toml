@@ -2,4 +2,5 @@
 members = [
     "lily-ast",
     "lily-core",
+    "lily-interner",
 ]
