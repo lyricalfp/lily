@@ -84,13 +84,77 @@ where
     }
 }
 
+pub struct InternedString<'a>(pub &'a str, pub private::PrivateZst);
+
+impl<'a> InternedString<'a> {
+    fn new(t: &'a str) -> Self {
+        Self(t, private::PrivateZst)
+    }
+}
+
+impl Debug for InternedString<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("InternedString").field(&self.0).finish()
+    }
+}
+
+impl PartialEq for InternedString<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(self.0, other.0)
+    }
+}
+
+impl Eq for InternedString<'_> {}
+
+impl Clone for InternedString<'_> {
+    fn clone(&self) -> Self {
+        Self(self.0, private::PrivateZst)
+    }
+}
+
+impl Copy for InternedString<'_> {}
+
+impl Hash for InternedString<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        ptr::hash(self.0, state)
+    }
+}
+
+pub struct StringInterner<'a> {
+    map: FxHashMap<&'a str, usize>,
+    vec: Vec<&'a str>,
+    arena: &'a Bump,
+}
+
+impl<'a> StringInterner<'a> {
+    pub fn new(arena: &'a Bump) -> Self {
+        Self {
+            map: FxHashMap::default(),
+            vec: Vec::default(),
+            arena,
+        }
+    }
+
+    pub fn intern(&mut self, value: &'a str) -> InternedString<'a> {
+        if let Some(&index) = self.map.get(&value) {
+            InternedString::new(self.vec[index])
+        } else {
+            let value = self.arena.alloc_str(value);
+            let index = self.vec.len();
+
+            self.map.insert(value, index);
+            self.vec.push(value);
+
+            InternedString::new(value)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bumpalo::Bump;
 
-    use crate::Interner;
-
-    type StringInterner<'a> = Interner<'a, &'a str>;
+    use crate::{Interner, StringInterner};
 
     #[test]
     pub fn it_works_as_intended() {
@@ -111,5 +175,13 @@ mod tests {
         assert_ne!(hello_a_0, hello_a_1);
         assert_ne!(hello_a_0, hello_b_1);
         assert_eq!(hello_a_1, hello_b_1);
+
+        let arena_2 = Bump::new();
+        let mut interner_2 = Interner::new(&arena_2);
+
+        let x = interner_2.intern(42);
+        let y = interner_2.intern(21 + 21);
+
+        assert_eq!(x, y)
     }
 }
