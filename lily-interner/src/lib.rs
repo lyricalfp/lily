@@ -12,7 +12,7 @@ mod private {
 }
 
 #[derive(Debug)]
-pub struct Interned<'a, T>(&'a T, private::PrivateZst);
+pub struct Interned<'a, T>(pub &'a T, pub private::PrivateZst);
 
 impl<'a, T> Interned<'a, T> {
     fn new(t: &'a T) -> Self {
