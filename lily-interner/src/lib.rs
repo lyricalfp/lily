@@ -1,6 +1,7 @@
 use std::{
     fmt::Debug,
     hash::{Hash, Hasher},
+    ops::Deref,
     ptr,
 };
 
@@ -48,6 +49,14 @@ impl<T> Copy for Interned<'_, T> {}
 impl<T> Hash for Interned<'_, T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         ptr::hash(self.0, state)
+    }
+}
+
+impl<'a, T> Deref for Interned<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &'a Self::Target {
+        self.0
     }
 }
 
