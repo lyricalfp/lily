@@ -73,9 +73,29 @@ impl<'a> Colosseum<'a> {
         ))
     }
 
+    pub fn make_constructor(&mut self, ann: Ann, name: &'a str) -> Type<'a> {
+        let name = self.intern_string(name);
+        self.make_type(ann, TypeKind::Constructor(name))
+    }
+
     pub fn make_compiler_constructor(&mut self, name: &'a str) -> Type<'a> {
         let name = self.intern_string(name);
         self.make_compiler_type(TypeKind::Constructor(name))
+    }
+
+    pub fn make_forall(
+        &mut self,
+        ann: Ann,
+        name: &'a str,
+        knd: Option<Type<'a>>,
+        typ: Type<'a>,
+    ) -> Type<'a> {
+        let name = self.intern_string(name);
+        self.make_type(ann, TypeKind::Quantifier(
+            QuantifierKind::Universal(name),
+            knd,
+            typ,
+        ))
     }
 
     pub fn make_compiler_forall(
@@ -106,8 +126,16 @@ impl<'a> Colosseum<'a> {
         ))
     }
 
+    pub fn make_function(&mut self, ann: Ann, argument: Type<'a>, result: Type<'a>) -> Type<'a> {
+        self.make_type(ann, TypeKind::Function(argument, result))
+    }
+
     pub fn make_compiler_function(&mut self, argument: Type<'a>, result: Type<'a>) -> Type<'a> {
         self.make_compiler_type(TypeKind::Function(argument, result))
+    }
+
+    pub fn make_kinded(&mut self, ann: Ann, typ: Type<'a>, knd: Type<'a>) -> Type<'a> {
+        self.make_type(ann, TypeKind::Kinded(typ, knd))
     }
 
     pub fn make_compiler_kinded(&mut self, typ: Type<'a>, knd: Type<'a>) -> Type<'a> {
@@ -117,6 +145,11 @@ impl<'a> Colosseum<'a> {
     pub fn make_compiler_skolem(&mut self, name: &'a str) -> Type<'a> {
         let name = self.intern_string(name);
         self.make_compiler_type(TypeKind::Variable(VariableKind::Skolem(name)))
+    }
+
+    pub fn make_variable(&mut self, ann: Ann, name: &'a str) -> Type<'a> {
+        let name = self.intern_string(name);
+        self.make_type(ann, TypeKind::Variable(VariableKind::Syntactic(name)))
     }
 
     pub fn make_compiler_variable(&mut self, name: &'a str) -> Type<'a> {
