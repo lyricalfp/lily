@@ -1,0 +1,57 @@
+use crate::ann::{Ann, Span};
+use crate::colosseum::Colosseum;
+use crate::types::Type;
+
+grammar(colosseum: &mut Colosseum<'input>);
+
+extern {
+    type Location = usize;
+}
+
+Name: &'input str = <s:r"[a-z]+"> => s;
+
+ProperName: &'input str = <s:r"[A-Z][a-z]*"> => s;
+
+TypeVariableBinder: (&'input str, Option<Type<'input>>) = {
+  <v:Name> => (v, None),
+  "(" <v:Name> "::" <k:TypeAtom> ")" => (v, Some(k)),
+}
+
+pub Type0: Type<'input> = {
+  Type1 => <>,
+  <l:@L> <a:Type1> "::" <b:Type0> <r:@R> => {
+    colosseum.make_kinded(Ann::FromSource(Span(l, r)), a, b)
+  }
+}
+
+pub Type1: Type<'input> = {
+  Type2 => <>,
+  <l:@L> "forall" <v:TypeVariableBinder+> "." <t:Type2> <r:@R> => {
+    v.iter().rfold(t, |c, (v, k)| {
+      colosseum.make_forall(Ann::FromSource(Span(l, r)), v, *k, c)
+    })
+  },
+}
+
+pub Type2: Type<'input> = {
+  Type3 => <>,
+  <l:@L> <a:Type3> "->" <b:Type1> <r:@R> => {
+    colosseum.make_function(Ann::FromSource(Span(l, r)), a, b)
+  },
+}
+
+pub Type3: Type<'input> = {
+  TypeAtom => <>,
+}
+
+pub TypeAtom: Type<'input> = {
+  <l:@L> <c:ProperName> <r:@R> => {
+    colosseum.make_constructor(Ann::FromSource(Span(l, r)), c)
+  },
+  <l:@L> <v:Name> <r:@R> => {
+    colosseum.make_variable(Ann::FromSource(Span(l, r)), v)
+  },
+  <l:@L> "(" <a:TypeAtom> "::" <b:Type0> ")" <r:@R> => {
+    colosseum.make_kinded(Ann::FromSource(Span(l, r)), a, b)
+  }
+}
