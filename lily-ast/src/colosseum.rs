@@ -44,11 +44,6 @@ impl<'a> Colosseum<'a> {
         Type(ann, type_kind)
     }
 
-    #[inline]
-    pub fn make_compiler_type(&mut self, type_kind: TypeKind<'a>) -> Type<'a> {
-        self.make_type(Ann::FromCompiler, type_kind)
-    }
-
     pub fn make_type_application(
         &mut self,
         ann: Ann,
@@ -61,38 +56,21 @@ impl<'a> Colosseum<'a> {
         )
     }
 
-    pub fn make_compiler_type_application(
+    pub fn make_kind_application(
         &mut self,
+        ann: Ann,
         function: Type<'a>,
         argument: Type<'a>,
     ) -> Type<'a> {
-        self.make_compiler_type(TypeKind::Application(
-            ApplicationKind::TypeApplication,
-            function,
-            argument,
-        ))
-    }
-
-    pub fn make_compiler_kind_application(
-        &mut self,
-        function: Type<'a>,
-        argument: Type<'a>,
-    ) -> Type<'a> {
-        self.make_compiler_type(TypeKind::Application(
-            ApplicationKind::KindApplication,
-            function,
-            argument,
-        ))
+        self.make_type(
+            ann,
+            TypeKind::Application(ApplicationKind::KindApplication, function, argument),
+        )
     }
 
     pub fn make_constructor(&mut self, ann: Ann, name: &'a str) -> Type<'a> {
         let name = self.intern_string(name);
         self.make_type(ann, TypeKind::Constructor(name))
-    }
-
-    pub fn make_compiler_constructor(&mut self, name: &'a str) -> Type<'a> {
-        let name = self.intern_string(name);
-        self.make_compiler_type(TypeKind::Constructor(name))
     }
 
     pub fn make_forall(
@@ -109,53 +87,31 @@ impl<'a> Colosseum<'a> {
         )
     }
 
-    pub fn make_compiler_forall(
+    pub fn make_exists(
         &mut self,
+        ann: Ann,
         name: &'a str,
         knd: Option<Type<'a>>,
         typ: Type<'a>,
     ) -> Type<'a> {
         let name = self.intern_string(name);
-        self.make_compiler_type(TypeKind::Quantifier(
-            QuantifierKind::Universal(name),
-            knd,
-            typ,
-        ))
-    }
-
-    pub fn make_compiler_exists(
-        &mut self,
-        name: &'a str,
-        knd: Option<Type<'a>>,
-        typ: Type<'a>,
-    ) -> Type<'a> {
-        let name = self.intern_string(name);
-        self.make_compiler_type(TypeKind::Quantifier(
-            QuantifierKind::Existential(name),
-            knd,
-            typ,
-        ))
+        self.make_type(
+            ann,
+            TypeKind::Quantifier(QuantifierKind::Existential(name), knd, typ),
+        )
     }
 
     pub fn make_function(&mut self, ann: Ann, argument: Type<'a>, result: Type<'a>) -> Type<'a> {
         self.make_type(ann, TypeKind::Function(argument, result))
     }
 
-    pub fn make_compiler_function(&mut self, argument: Type<'a>, result: Type<'a>) -> Type<'a> {
-        self.make_compiler_type(TypeKind::Function(argument, result))
-    }
-
     pub fn make_kinded(&mut self, ann: Ann, typ: Type<'a>, knd: Type<'a>) -> Type<'a> {
         self.make_type(ann, TypeKind::Kinded(typ, knd))
     }
 
-    pub fn make_compiler_kinded(&mut self, typ: Type<'a>, knd: Type<'a>) -> Type<'a> {
-        self.make_compiler_type(TypeKind::Kinded(typ, knd))
-    }
-
-    pub fn make_compiler_skolem(&mut self, name: &'a str) -> Type<'a> {
+    pub fn make_skolem(&mut self, ann: Ann, name: &'a str) -> Type<'a> {
         let name = self.intern_string(name);
-        self.make_compiler_type(TypeKind::Variable(VariableKind::Skolem(name)))
+        self.make_type(ann, TypeKind::Variable(VariableKind::Skolem(name)))
     }
 
     pub fn make_variable(&mut self, ann: Ann, name: &'a str) -> Type<'a> {
@@ -163,18 +119,15 @@ impl<'a> Colosseum<'a> {
         self.make_type(ann, TypeKind::Variable(VariableKind::Syntactic(name)))
     }
 
-    pub fn make_compiler_variable(&mut self, name: &'a str) -> Type<'a> {
-        let name = self.intern_string(name);
-        self.make_compiler_type(TypeKind::Variable(VariableKind::Syntactic(name)))
-    }
-
-    pub fn make_compiler_unification(&mut self, name: u32) -> Type<'a> {
-        self.make_compiler_type(TypeKind::Variable(VariableKind::Unification(name)))
+    pub fn make_unification(&mut self, ann: Ann, name: u32) -> Type<'a> {
+        self.make_type(ann, TypeKind::Variable(VariableKind::Unification(name)))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::ann::Ann;
+
     use super::Colosseum;
     use bumpalo::Bump;
 
@@ -184,18 +137,18 @@ mod tests {
         let mut colosseum = Colosseum::new(&arena);
 
         // `forall (a : Type) . a -> a`
-        let k = colosseum.make_compiler_constructor("Type");
-        let v = colosseum.make_compiler_variable("a");
-        let f = colosseum.make_compiler_function(v, v);
-        let _ = colosseum.make_compiler_forall("a", Some(k), f);
+        let k = colosseum.make_constructor(Ann::FromCompiler, "Type");
+        let v = colosseum.make_variable(Ann::FromCompiler, "a");
+        let f = colosseum.make_function(Ann::FromCompiler, v, v);
+        let _ = colosseum.make_forall(Ann::FromCompiler, "a", Some(k), f);
 
         let allocated_0 = arena.allocated_bytes();
 
         for _ in 1..100 {
-            let k = colosseum.make_compiler_constructor("Type");
-            let v = colosseum.make_compiler_variable("a");
-            let f = colosseum.make_compiler_function(v, v);
-            let _ = colosseum.make_compiler_forall("a", Some(k), f);
+            let k = colosseum.make_constructor(Ann::FromCompiler, "Type");
+            let v = colosseum.make_variable(Ann::FromCompiler, "a");
+            let f = colosseum.make_function(Ann::FromCompiler, v, v);
+            let _ = colosseum.make_forall(Ann::FromCompiler, "a", Some(k), f);
         }
 
         let allocated_1 = arena.allocated_bytes();
