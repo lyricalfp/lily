@@ -6,6 +6,7 @@ use crate::{
     types::{ApplicationKind, QuantifierKind, Type, TypeKind, VariableKind},
 };
 
+#[derive(Debug)]
 pub struct Colosseum<'a> {
     ann_interner: Interner<'a, Ann>,
     string_interner: StringInterner<'a>,

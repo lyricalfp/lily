@@ -60,6 +60,7 @@ impl<'a, T> Deref for Interned<'a, T> {
     }
 }
 
+#[derive(Debug)]
 pub struct Interner<'a, T> {
     map: FxHashMap<&'a T, usize>,
     vec: Vec<&'a T>,
@@ -129,6 +130,7 @@ impl Hash for InternedString<'_> {
     }
 }
 
+#[derive(Debug)]
 pub struct StringInterner<'a> {
     map: FxHashMap<&'a str, usize>,
     vec: Vec<&'a str>,
