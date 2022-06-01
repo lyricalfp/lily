@@ -7,5 +7,9 @@ edition = "2021"
 
 [dependencies]
 bumpalo = "3.9.1"
+lalrpop-util = "0.19.8"
 lily-interner = { version = "0.0.0", path = "../lily-interner" }
 rustc-hash = "1.1.0"
+
+[build-dependencies]
+lalrpop = "0.19.8"
