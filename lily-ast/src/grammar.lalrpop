@@ -42,6 +42,9 @@ pub Type2: Type<'input> = {
 
 pub Type3: Type<'input> = {
   TypeAtom => <>,
+  <l:@L> <a:Type3> <b:TypeAtom> <r:@R> => {
+    colosseum.make_type_application(Ann::FromSource(Span(l, r)), a, b)
+  },
 }
 
 pub TypeAtom: Type<'input> = {

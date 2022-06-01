@@ -49,6 +49,18 @@ impl<'a> Colosseum<'a> {
         self.make_type(Ann::FromCompiler, type_kind)
     }
 
+    pub fn make_type_application(
+        &mut self,
+        ann: Ann,
+        function: Type<'a>,
+        argument: Type<'a>,
+    ) -> Type<'a> {
+        self.make_type(
+            ann,
+            TypeKind::Application(ApplicationKind::TypeApplication, function, argument),
+        )
+    }
+
     pub fn make_compiler_type_application(
         &mut self,
         function: Type<'a>,
@@ -91,11 +103,10 @@ impl<'a> Colosseum<'a> {
         typ: Type<'a>,
     ) -> Type<'a> {
         let name = self.intern_string(name);
-        self.make_type(ann, TypeKind::Quantifier(
-            QuantifierKind::Universal(name),
-            knd,
-            typ,
-        ))
+        self.make_type(
+            ann,
+            TypeKind::Quantifier(QuantifierKind::Universal(name), knd, typ),
+        )
     }
 
     pub fn make_compiler_forall(
