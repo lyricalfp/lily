@@ -3,6 +3,7 @@ use lily_interner::{Interned, InternedString, Interner, StringInterner};
 
 use crate::{
     ann::Ann,
+    exprs::{Expr, ExprKind},
     types::{ApplicationKind, QuantifierKind, Type, TypeKind, VariableKind},
 };
 
@@ -10,6 +11,7 @@ use crate::{
 pub struct Colosseum<'a> {
     ann_interner: Interner<'a, Ann>,
     string_interner: StringInterner<'a>,
+    expr_kind_interner: Interner<'a, ExprKind<'a>>,
     type_kind_interner: Interner<'a, TypeKind<'a>>,
 }
 
@@ -18,6 +20,7 @@ impl<'a> Colosseum<'a> {
         Self {
             ann_interner: Interner::new(arena),
             string_interner: StringInterner::new(arena),
+            expr_kind_interner: Interner::new(arena),
             type_kind_interner: Interner::new(arena),
         }
     }
@@ -33,8 +36,20 @@ impl<'a> Colosseum<'a> {
     }
 
     #[inline]
+    fn intern_expr_kind(&mut self, value: ExprKind<'a>) -> Interned<'a, ExprKind<'a>> {
+        self.expr_kind_interner.intern(value)
+    }
+
+    #[inline]
     fn intern_type_kind(&mut self, value: TypeKind<'a>) -> Interned<'a, TypeKind<'a>> {
         self.type_kind_interner.intern(value)
+    }
+
+    #[inline]
+    pub fn make_expr(&mut self, ann: Ann, expr_kind: ExprKind<'a>) -> Expr<'a> {
+        let ann = self.intern_ann(ann);
+        let expr_kind = self.intern_expr_kind(expr_kind);
+        Expr(ann, expr_kind)
     }
 
     #[inline]

@@ -8,5 +8,5 @@ pub struct Span(pub usize, pub usize);
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Ann {
     FromCompiler,
-    FromSource(Span),  // TODO: add module name here
+    FromSource(Span), // TODO: add module name here
 }
