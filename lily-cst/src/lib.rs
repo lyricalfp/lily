@@ -33,51 +33,28 @@ pub enum Token<'a> {
     ArrowConstraint,
 }
 
-type Pattern<'a> = &'a str;
-type Creator<'a> = &'a dyn Fn(Captures<'a>) -> Result<Token<'a>, Error>;
-
-#[derive(Default)]
-struct Builder<'a>(Vec<(Pattern<'a>, Creator<'a>)>);
-
-impl<'a> Builder<'a> {
-    fn push(mut self, p: Pattern<'a>, c: Creator<'a>) -> Self {
-        self.0.push((p, c));
-        self
-    }
-
-    fn build(self) -> Vec<(Regex, Creator<'a>)> {
-        self.0
-            .into_iter()
-            .map(|(pattern, creator)| {
-                (
-                    Regex::new(pattern).unwrap(),
-                    creator,
-                )
-            })
-            .collect()
-    }
-}
+type Cb<'a> = &'a dyn Fn(Captures<'a>) -> Result<Token<'a>, Error>;
 
 pub struct Lexer<'a> {
     offset: usize,
     source: &'a str,
-    patterns: Vec<(Regex, Creator<'a>)>,
+    patterns: Vec<(Regex, Cb<'a>)>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         let offset = 0;
-        let patterns = Builder::default()
-            .push(r"^\p{Lu}[\p{L}+_0-9']*", &|i| {
+        let patterns: &[(&'a str, Cb<'a>)] = &[
+            (r"^\p{Lu}[\p{L}+_0-9']*", &|i| {
                 Ok(Token::NameUpper(i.get(0).unwrap().as_str()))
-            })
-            .push(r"^[\p{Ll}_][\p{L}+_0-9']*", &|i| {
+            }),
+            (r"^[\p{Ll}_][\p{L}+_0-9']*", &|i| {
                 Ok(Token::NameLower(i.get(0).unwrap().as_str()))
-            })
-            .push(r"^([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
+            }),
+            (r"^([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
-            })
-            .push(r"^([0-9]+)(\.[0-9]+)?", &|i| {
+            }),
+            (r"^([0-9]+)(\.[0-9]+)?", &|i| {
                 let m = i.get(0).unwrap();
                 let s = m.as_str();
                 if s.starts_with("00") {
@@ -91,11 +68,11 @@ impl<'a> Lexer<'a> {
                         .map(Token::DigitInteger)
                         .map_err(|_| Error::InternalPanic)
                 }
-            })
-            .push(r"^--( *\|)?(.+)\n*", &|i| {
+            }),
+            (r"^--( *\|)?(.+)\n*", &|i| {
                 Ok(Token::CommentLine(i.get(2).unwrap().as_str().trim()))
-            })
-            .push(r"^(::|->|=>|<-|<=)", &|i| {
+            }),
+            (r"^(::|->|=>|<-|<=)", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
                     "::" => Token::SymbolColon,
                     "->" => Token::ArrowFunction,
@@ -104,8 +81,8 @@ impl<'a> Lexer<'a> {
                     "<-" => Token::NameSymbol("<-"),
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
-            })
-            .push(r"^[\[\](){}@,=.|`_]", &|i| {
+            }),
+            (r"^[\[\](){}@,=.|`_]", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
                     "(" => Token::ParenLeft,
                     ")" => Token::ParenRight,
@@ -122,8 +99,12 @@ impl<'a> Lexer<'a> {
                     "_" => Token::SymbolUnderscore,
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
-            })
-            .build();
+            }),
+        ];
+        let patterns = patterns
+            .iter()
+            .map(|(pattern, creator)| (Regex::new(pattern).unwrap(), *creator))
+            .collect();
         Self {
             offset,
             source,
