@@ -82,16 +82,14 @@ impl<'a> Lexer<'a> {
                 let s = m.as_str();
                 if s.starts_with("00") {
                     Err(Error::UnecessaryLeadingZeroes(m.start()))
+                } else if i.get(2).is_some() {
+                    s.parse()
+                        .map(Token::DigitDouble)
+                        .map_err(|_| Error::InternalPanic)
                 } else {
-                    if i.get(2).is_some() {
-                        s.parse()
-                            .map(|d| Token::DigitDouble(d))
-                            .map_err(|_| Error::InternalPanic)
-                    } else {
-                        s.parse()
-                            .map(|d| Token::DigitInteger(d))
-                            .map_err(|_| Error::InternalPanic)
-                    }
+                    s.parse()
+                        .map(Token::DigitInteger)
+                        .map_err(|_| Error::InternalPanic)
                 }
             })
             .push(r"--( *\|)?(.+)\n*", &|i| {
