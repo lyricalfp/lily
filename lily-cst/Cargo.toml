@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 fancy-regex = "0.10.0"
 lalrpop-util = "0.19.8"
-regex = "1.5.6"
+lily-interner = { version = "0.0.0", path = "../lily-interner" }
 
 [build-dependencies]
 lalrpop = "0.19.8"
