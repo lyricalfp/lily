@@ -1,4 +1,4 @@
-use fancy_regex::Regex;
+use fancy_regex::{Captures, Regex};
 
 #[derive(Debug)]
 pub enum Error {
@@ -19,6 +19,7 @@ pub enum Token<'a> {
     SquareLeft,
     SquareRight,
     SymbolAt,
+    SymbolColon,
     SymbolComma,
     SymbolEquals,
     SymbolPeriod,
@@ -26,10 +27,12 @@ pub enum Token<'a> {
     SymbolTick,
     SymbolUnderscore,
     CommentLine(&'a str),
+    ArrowFunction,
+    ArrowConstraint,
 }
 
 type Pattern<'a> = &'a str;
-type Creator<'a> = &'a dyn Fn(&'a str) -> Result<Token<'a>, Error>;
+type Creator<'a> = &'a dyn Fn(Captures<'a>) -> Result<Token<'a>, Error>;
 
 #[derive(Default)]
 struct Builder<'a>(Vec<(Pattern<'a>, Creator<'a>)>);
@@ -63,16 +66,30 @@ impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         let offset = 0;
         let patterns = Builder::default()
-            .push(r"\p{Lu}[\p{L}+_0-9']*", &|i| Ok(Token::NameUpper(i)))
-            .push(r"[\p{Ll}_][\p{L}+_0-9']*", &|i| Ok(Token::NameLower(i)))
-            .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
-                Ok(Token::NameSymbol(i))
+            .push(r"\p{Lu}[\p{L}+_0-9']*", &|i| {
+                Ok(Token::NameUpper(i.get(0).unwrap().as_str()))
             })
-            .push(r"--( \|)?.+\n*", &|i| {
-                Ok(Token::CommentLine(i.trim_start_matches("-- |").trim_start_matches("--").trim()))
+            .push(r"[\p{Ll}_][\p{L}+_0-9']*", &|i| {
+                Ok(Token::NameLower(i.get(0).unwrap().as_str()))
+            })
+            .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
+                Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
+            })
+            .push(r"--( \|)?(.+)\n*", &|i| {
+                Ok(Token::CommentLine(i.get(2).unwrap().as_str()))
+            })
+            .push(r"(::|->|=>|<-|<=)", &|i| {
+                Ok(match i.get(0).unwrap().as_str() {
+                    "::" => Token::SymbolColon,
+                    "->" => Token::ArrowFunction,
+                    "=>" => Token::ArrowConstraint,
+                    "<=" => Token::NameSymbol("<="),
+                    "<-" => Token::NameSymbol("<-"),
+                    _ => panic!("Lexer::new - this path is never taken")
+                })
             })
             .push(r"[\[\](){}@,=.|`_]", &|i| {
-                Ok(match i {
+                Ok(match i.get(0).unwrap().as_str() {
                     "(" => Token::ParenLeft,
                     ")" => Token::ParenRight,
                     "[" => Token::SquareLeft,
@@ -121,8 +138,8 @@ impl<'a> Iterator for Lexer<'a> {
             .patterns
             .iter()
             .filter_map(|(regex, creator)| {
-                if let Ok(Some(m)) = regex.find(self.window()) {
-                    Some((m.end(), creator(m.as_str())))
+                if let Ok(Some(c)) = regex.captures(self.window()) {
+                    Some((c.get(0).unwrap().end(), creator(c)))
                 } else {
                     None
                 }
@@ -145,7 +162,7 @@ impl<'a> Iterator for Lexer<'a> {
 
 #[test]
 pub fn it_works_as_intended() {
-    for token in Lexer::new("let x = x in [x + x, x * x, x - x, x -- | x, x == x]\n\nid a = a").take(30) {
+    for token in Lexer::new("main :: Effect Unit\nmain = do\n  pure unit").take(30) {
         println!("{:?}", token);
     }
 }
