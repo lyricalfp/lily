@@ -50,7 +50,7 @@ impl<'a> Builder<'a> {
             .into_iter()
             .map(|(pattern, creator)| {
                 (
-                    Regex::new(format!("^{}", pattern).as_str()).unwrap(),
+                    Regex::new(pattern).unwrap(),
                     creator,
                 )
             })
@@ -68,16 +68,16 @@ impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         let offset = 0;
         let patterns = Builder::default()
-            .push(r"\p{Lu}[\p{L}+_0-9']*", &|i| {
+            .push(r"^\p{Lu}[\p{L}+_0-9']*", &|i| {
                 Ok(Token::NameUpper(i.get(0).unwrap().as_str()))
             })
-            .push(r"[\p{Ll}_][\p{L}+_0-9']*", &|i| {
+            .push(r"^[\p{Ll}_][\p{L}+_0-9']*", &|i| {
                 Ok(Token::NameLower(i.get(0).unwrap().as_str()))
             })
-            .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
+            .push(r"^([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
             })
-            .push(r"([0-9]+)(\.[0-9]+)?", &|i| {
+            .push(r"^([0-9]+)(\.[0-9]+)?", &|i| {
                 let m = i.get(0).unwrap();
                 let s = m.as_str();
                 if s.starts_with("00") {
@@ -92,10 +92,10 @@ impl<'a> Lexer<'a> {
                         .map_err(|_| Error::InternalPanic)
                 }
             })
-            .push(r"--( *\|)?(.+)\n*", &|i| {
+            .push(r"^--( *\|)?(.+)\n*", &|i| {
                 Ok(Token::CommentLine(i.get(2).unwrap().as_str().trim()))
             })
-            .push(r"(::|->|=>|<-|<=)", &|i| {
+            .push(r"^(::|->|=>|<-|<=)", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
                     "::" => Token::SymbolColon,
                     "->" => Token::ArrowFunction,
@@ -105,7 +105,7 @@ impl<'a> Lexer<'a> {
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
             })
-            .push(r"[\[\](){}@,=.|`_]", &|i| {
+            .push(r"^[\[\](){}@,=.|`_]", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
                     "(" => Token::ParenLeft,
                     ")" => Token::ParenRight,
