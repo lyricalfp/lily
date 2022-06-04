@@ -10,7 +10,7 @@ pub enum Token<'a> {
     DigitDouble(f64),
     DigitInteger(i64),
     NameLower(&'a str),
-    NameProper(&'a str),
+    NameUpper(&'a str),
     NameSymbol(&'a str),
     ParenLeft,
     ParenRight,
@@ -18,7 +18,13 @@ pub enum Token<'a> {
     BracketRight,
     SquareLeft,
     SquareRight,
+    SymbolAt,
     SymbolComma,
+    SymbolEquals,
+    SymbolPeriod,
+    SymbolPipe,
+    SymbolTick,
+    SymbolUnderscore,
 }
 
 type Pattern<'a> = &'a str;
@@ -56,12 +62,12 @@ impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         let offset = 0;
         let patterns = Builder::default()
-            .push(r"[\p{Lu}_][\p{L}+_0-9']*", &|i| Ok(Token::NameProper(i)))
+            .push(r"\p{Lu}[\p{L}+_0-9']*", &|i| Ok(Token::NameUpper(i)))
             .push(r"[\p{Ll}_][\p{L}+_0-9']*", &|i| Ok(Token::NameLower(i)))
             .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i))
             })
-            .push(r"[\[\](){},]", &|i| {
+            .push(r"[\[\](){}@,=.|`_]", &|i| {
                 Ok(match i {
                     "(" => Token::ParenLeft,
                     ")" => Token::ParenRight,
@@ -69,7 +75,13 @@ impl<'a> Lexer<'a> {
                     "]" => Token::SquareRight,
                     "{" => Token::BracketLeft,
                     "}" => Token::BracketRight,
+                    "@" => Token::SymbolAt,
                     "," => Token::SymbolComma,
+                    "=" => Token::SymbolEquals,
+                    "." => Token::SymbolPeriod,
+                    "|" => Token::SymbolPipe,
+                    "`" => Token::SymbolTick,
+                    "_" => Token::SymbolUnderscore,
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
             })
@@ -129,7 +141,7 @@ impl<'a> Iterator for Lexer<'a> {
 
 #[test]
 pub fn it_works_as_intended() {
-    for token in Lexer::new("[(hello # world), a0 + b1, _a + _b_ * _c']").take(20) {
+    for token in Lexer::new("let x = x in [x + x, x * x, x - x, x / x, x == x]").take(30) {
         println!("{:?}", token);
     }
 }
