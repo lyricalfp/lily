@@ -25,6 +25,7 @@ pub enum Token<'a> {
     SymbolPipe,
     SymbolTick,
     SymbolUnderscore,
+    CommentLine(&'a str),
 }
 
 type Pattern<'a> = &'a str;
@@ -66,6 +67,9 @@ impl<'a> Lexer<'a> {
             .push(r"[\p{Ll}_][\p{L}+_0-9']*", &|i| Ok(Token::NameLower(i)))
             .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i))
+            })
+            .push(r"--( \|)?.+\n*", &|i| {
+                Ok(Token::CommentLine(i.trim_start_matches("-- |").trim_start_matches("--").trim()))
             })
             .push(r"[\[\](){}@,=.|`_]", &|i| {
                 Ok(match i {
@@ -141,7 +145,7 @@ impl<'a> Iterator for Lexer<'a> {
 
 #[test]
 pub fn it_works_as_intended() {
-    for token in Lexer::new("let x = x in [x + x, x * x, x - x, x / x, x == x]").take(30) {
+    for token in Lexer::new("let x = x in [x + x, x * x, x - x, x -- | x, x == x]\n\nid a = a").take(30) {
         println!("{:?}", token);
     }
 }
