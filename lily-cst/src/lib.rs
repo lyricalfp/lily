@@ -75,8 +75,8 @@ impl<'a> Lexer<'a> {
             .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
             })
-            .push(r"--( \|)?(.+)\n*", &|i| {
-                Ok(Token::CommentLine(i.get(2).unwrap().as_str()))
+            .push(r"--( *\|)?(.+)\n*", &|i| {
+                Ok(Token::CommentLine(i.get(2).unwrap().as_str().trim()))
             })
             .push(r"(::|->|=>|<-|<=)", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
@@ -85,7 +85,7 @@ impl<'a> Lexer<'a> {
                     "=>" => Token::ArrowConstraint,
                     "<=" => Token::NameSymbol("<="),
                     "<-" => Token::NameSymbol("<-"),
-                    _ => panic!("Lexer::new - this path is never taken")
+                    _ => panic!("Lexer::new - this path is never taken"),
                 })
             })
             .push(r"[\[\](){}@,=.|`_]", &|i| {
