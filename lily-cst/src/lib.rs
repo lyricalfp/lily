@@ -3,6 +3,8 @@ use fancy_regex::{Captures, Regex};
 #[derive(Debug)]
 pub enum Error {
     UnrecognizedToken(usize),
+    UnecessaryLeadingZeroes(usize),
+    InternalPanic,
 }
 
 #[derive(Debug)]
@@ -74,6 +76,23 @@ impl<'a> Lexer<'a> {
             })
             .push(r"([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
                 Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
+            })
+            .push(r"([0-9]+)(\.[0-9]+)?", &|i| {
+                let m = i.get(0).unwrap();
+                let s = m.as_str();
+                if s.starts_with("00") {
+                    Err(Error::UnecessaryLeadingZeroes(m.start()))
+                } else {
+                    if i.get(2).is_some() {
+                        s.parse()
+                            .map(|d| Token::DigitDouble(d))
+                            .map_err(|_| Error::InternalPanic)
+                    } else {
+                        s.parse()
+                            .map(|d| Token::DigitInteger(d))
+                            .map_err(|_| Error::InternalPanic)
+                    }
+                }
             })
             .push(r"--( *\|)?(.+)\n*", &|i| {
                 Ok(Token::CommentLine(i.get(2).unwrap().as_str().trim()))
