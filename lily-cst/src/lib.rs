@@ -162,18 +162,18 @@ impl<'a> Iterator for Lexer<'a> {
             .patterns
             .iter()
             .filter_map(|(regex, creator)| {
-                if let Ok(Some(c)) = regex.captures(self.window()) {
-                    Some((c.get(0).unwrap(), creator(c)))
+                if let Ok(Some(captures)) = regex.captures(self.window()) {
+                    Some((captures.get(0).unwrap(), creator, captures))
                 } else {
                     None
                 }
             })
-            .max_by_key(|(m, _)| m.end());
+            .max_by_key(|(whole, _, _)| whole.end());
 
         match longest_match {
-            Some((m, created)) => match created {
+            Some((whole, creator, captures)) => match creator(captures) {
                 Ok(kind) => {
-                    let (offset, line, col) = self.advance(m.as_str());
+                    let (offset, line, col) = self.advance(whole.as_str());
                     Some(Ok((offset, Token { kind, line, col }, self.offset)))
                 }
                 Err(error) => Some(Err(error)),
