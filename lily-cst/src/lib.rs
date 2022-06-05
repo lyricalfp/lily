@@ -8,7 +8,7 @@ pub enum Error {
 }
 
 #[derive(Debug)]
-pub enum Token<'a> {
+pub enum TokenKind<'a> {
     DigitDouble(f64),
     DigitInteger(i64),
     NameLower(&'a str),
@@ -33,12 +33,21 @@ pub enum Token<'a> {
     ArrowConstraint,
 }
 
-type Cb<'a> = &'a dyn Fn(Captures<'a>) -> Result<Token<'a>, Error>;
+#[derive(Debug)]
+pub struct Token<'a> {
+    pub kind: TokenKind<'a>,
+    pub line: usize,
+    pub col: usize,
+}
+
+type Cb<'a> = &'a dyn Fn(Captures<'a>) -> Result<TokenKind<'a>, Error>;
 
 pub struct Lexer<'a> {
     offset: usize,
     source: &'a str,
     patterns: Vec<(Regex, Cb<'a>)>,
+    line: usize,
+    col: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -46,13 +55,13 @@ impl<'a> Lexer<'a> {
         let offset = 0;
         let patterns: &[(&'a str, Cb<'a>)] = &[
             (r"^\p{Lu}[\p{L}+_0-9']*", &|i| {
-                Ok(Token::NameUpper(i.get(0).unwrap().as_str()))
+                Ok(TokenKind::NameUpper(i.get(0).unwrap().as_str()))
             }),
             (r"^[\p{Ll}_][\p{L}+_0-9']*", &|i| {
-                Ok(Token::NameLower(i.get(0).unwrap().as_str()))
+                Ok(TokenKind::NameLower(i.get(0).unwrap().as_str()))
             }),
             (r"^([:!#$%&*+./<=>?@\\^|~-]|(?!\p{P})\p{S})+", &|i| {
-                Ok(Token::NameSymbol(i.get(0).unwrap().as_str()))
+                Ok(TokenKind::NameSymbol(i.get(0).unwrap().as_str()))
             }),
             (r"^([0-9]+)(\.[0-9]+)?", &|i| {
                 let m = i.get(0).unwrap();
@@ -61,42 +70,42 @@ impl<'a> Lexer<'a> {
                     Err(Error::UnecessaryLeadingZeroes(m.start()))
                 } else if i.get(2).is_some() {
                     s.parse()
-                        .map(Token::DigitDouble)
+                        .map(TokenKind::DigitDouble)
                         .map_err(|_| Error::InternalPanic)
                 } else {
                     s.parse()
-                        .map(Token::DigitInteger)
+                        .map(TokenKind::DigitInteger)
                         .map_err(|_| Error::InternalPanic)
                 }
             }),
             (r"^--( *\|)?(.+)\n*", &|i| {
-                Ok(Token::CommentLine(i.get(2).unwrap().as_str().trim()))
+                Ok(TokenKind::CommentLine(i.get(2).unwrap().as_str().trim()))
             }),
             (r"^(::|->|=>|<-|<=)", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
-                    "::" => Token::SymbolColon,
-                    "->" => Token::ArrowFunction,
-                    "=>" => Token::ArrowConstraint,
-                    "<=" => Token::NameSymbol("<="),
-                    "<-" => Token::NameSymbol("<-"),
+                    "::" => TokenKind::SymbolColon,
+                    "->" => TokenKind::ArrowFunction,
+                    "=>" => TokenKind::ArrowConstraint,
+                    "<=" => TokenKind::NameSymbol("<="),
+                    "<-" => TokenKind::NameSymbol("<-"),
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
             }),
             (r"^[\[\](){}@,=.|`_]", &|i| {
                 Ok(match i.get(0).unwrap().as_str() {
-                    "(" => Token::ParenLeft,
-                    ")" => Token::ParenRight,
-                    "[" => Token::SquareLeft,
-                    "]" => Token::SquareRight,
-                    "{" => Token::BracketLeft,
-                    "}" => Token::BracketRight,
-                    "@" => Token::SymbolAt,
-                    "," => Token::SymbolComma,
-                    "=" => Token::SymbolEquals,
-                    "." => Token::SymbolPeriod,
-                    "|" => Token::SymbolPipe,
-                    "`" => Token::SymbolTick,
-                    "_" => Token::SymbolUnderscore,
+                    "(" => TokenKind::ParenLeft,
+                    ")" => TokenKind::ParenRight,
+                    "[" => TokenKind::SquareLeft,
+                    "]" => TokenKind::SquareRight,
+                    "{" => TokenKind::BracketLeft,
+                    "}" => TokenKind::BracketRight,
+                    "@" => TokenKind::SymbolAt,
+                    "," => TokenKind::SymbolComma,
+                    "=" => TokenKind::SymbolEquals,
+                    "." => TokenKind::SymbolPeriod,
+                    "|" => TokenKind::SymbolPipe,
+                    "`" => TokenKind::SymbolTick,
+                    "_" => TokenKind::SymbolUnderscore,
                     _ => panic!("Lexer::new - this path is never taken"),
                 })
             }),
@@ -109,12 +118,29 @@ impl<'a> Lexer<'a> {
             offset,
             source,
             patterns,
+            line: 1,
+            col: 1,
         }
     }
 
     #[inline]
     fn window(&self) -> &'a str {
         &self.source[self.offset..]
+    }
+
+    #[inline]
+    fn advance(&mut self, with: &str) -> (usize, usize, usize) {
+        let current = (self.offset, self.line, self.col);
+        self.offset += with.len();
+        for character in with.chars() {
+            if character == '\n' {
+                self.line += 1;
+                self.col = 1;
+            } else {
+                self.col += 1;
+            }
+        }
+        current
     }
 }
 
@@ -129,7 +155,7 @@ impl<'a> Iterator for Lexer<'a> {
         // skip whitespaces
         let whitespace = Regex::new(r"^\s+").unwrap();
         if let Ok(Some(m)) = whitespace.find(self.window()) {
-            self.offset += m.end();
+            self.advance(m.as_str());
         }
         // everything else
         let longest_match = self
@@ -137,19 +163,18 @@ impl<'a> Iterator for Lexer<'a> {
             .iter()
             .filter_map(|(regex, creator)| {
                 if let Ok(Some(c)) = regex.captures(self.window()) {
-                    Some((c.get(0).unwrap().end(), creator(c)))
+                    Some((c.get(0).unwrap(), creator(c)))
                 } else {
                     None
                 }
             })
-            .max_by_key(|(length, _)| *length);
+            .max_by_key(|(m, _)| m.end());
 
         match longest_match {
-            Some((length, created)) => match created {
-                Ok(token) => {
-                    let left_offset = self.offset;
-                    self.offset += length;
-                    Some(Ok((left_offset, token, self.offset)))
+            Some((m, created)) => match created {
+                Ok(kind) => {
+                    let (offset, line, col) = self.advance(m.as_str());
+                    Some(Ok((offset, Token { kind, line, col }, self.offset)))
                 }
                 Err(error) => Some(Err(error)),
             },
