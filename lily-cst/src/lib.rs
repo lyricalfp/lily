@@ -171,13 +171,10 @@ impl<'a> Iterator for Lexer<'a> {
             .max_by_key(|(whole, _, _)| whole.end());
 
         match longest_match {
-            Some((whole, creator, captures)) => match creator(captures) {
-                Ok(kind) => {
-                    let (offset, line, col) = self.advance(whole.as_str());
-                    Some(Ok((offset, Token { kind, line, col }, self.offset)))
-                }
-                Err(error) => Some(Err(error)),
-            },
+            Some((whole, creator, captures)) => Some(creator(captures).map(|kind| {
+                let (offset, line, col) = self.advance(whole.as_str());
+                (offset, Token { kind, line, col }, self.offset)
+            })),
             None => Some(Err(Error::UnrecognizedToken(self.offset))),
         }
     }
