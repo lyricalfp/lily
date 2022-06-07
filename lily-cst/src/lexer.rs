@@ -12,11 +12,11 @@ pub enum Error {
 type Cb<'a> = &'a dyn Fn(Captures<'a>) -> Result<TokenKind<'a>, Error>;
 
 pub struct Lexer<'a> {
-    offset: usize,
     source: &'a str,
     patterns: Vec<(Regex, Cb<'a>)>,
+    column: usize,
     line: usize,
-    col: usize,
+    offset: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -88,7 +88,7 @@ impl<'a> Lexer<'a> {
             source,
             patterns,
             line: 1,
-            col: 1,
+            column: 1,
         }
     }
 
@@ -99,14 +99,14 @@ impl<'a> Lexer<'a> {
 
     #[inline]
     fn advance(&mut self, with: &str) -> (usize, usize, usize) {
-        let current = (self.offset, self.line, self.col);
+        let current = (self.offset, self.line, self.column);
         self.offset += with.len();
         for character in with.chars() {
             if character == '\n' {
                 self.line += 1;
-                self.col = 1;
+                self.column = 1;
             } else {
-                self.col += 1;
+                self.column += 1;
             }
         }
         current
