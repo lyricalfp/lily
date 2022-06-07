@@ -117,10 +117,6 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Result<(usize, Token<'a>, usize), Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // handle eof
-        if self.offset >= self.source.len() {
-            return None;
-        }
         // skip whitespaces
         let whitespace = Regex::new(r"^\s+").unwrap();
         if let Ok(Some(m)) = whitespace.find(self.window()) {
@@ -144,7 +140,13 @@ impl<'a> Iterator for Lexer<'a> {
                 let (offset, line, col) = self.advance(whole.as_str());
                 (offset, Token { kind, line, col }, self.offset)
             })),
-            None => Some(Err(Error::UnrecognizedToken(self.offset))),
+            None => {
+                if self.offset >= self.source.len() {
+                    None
+                } else {
+                    Some(Err(Error::UnrecognizedToken(self.offset)))
+                }
+            }
         }
     }
 }
