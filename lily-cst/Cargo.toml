@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fancy-regex = "0.10.0"
-lalrpop-util = "0.19.8"
-lily-interner = { version = "0.0.0", path = "../lily-interner" }
-
-[build-dependencies]
-lalrpop = "0.19.8"
+logos = "0.12.0"
+smol_str = "0.1.23"
+unicode_categories = { git = "https://github.com/swgillespie/unicode-categories", rev = "ef659e9089b604f55f37f9eebdfa7313baed7d16" }
