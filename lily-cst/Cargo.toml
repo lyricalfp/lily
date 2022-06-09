@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-logos = "0.12.0"
-smol_str = "0.1.23"
-unicode_categories = { git = "https://github.com/swgillespie/unicode-categories", rev = "ef659e9089b604f55f37f9eebdfa7313baed7d16" }
+hex = "0.4.3"
+pest = "2.1.3"
+pest_derive = "2.1.0"
