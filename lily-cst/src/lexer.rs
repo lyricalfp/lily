@@ -12,7 +12,7 @@ use std::str::Chars;
 use unicode_categories::UnicodeCategories;
 
 /// An error for an unknown token.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TokenError {
     UnfinishedBlockComment,
     UnfinishedCharacter,
@@ -22,36 +22,58 @@ pub enum TokenError {
 }
 
 /// The kind of the spanned token.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TokenKind {
+    /// A backslash: `\`
+    Backslash,
     /// A character: `'a'`
     Character,
+    /// A colon: `:`
+    Colon,
+    /// A comma: `,`
+    Comma,
     /// A comment block: `{- hey! -}`
     CommentBlock,
     /// A comment line: `-- listen!`
     CommentLine,
-    /// The end of the file.
-    Eof,
-    /// A "word": `_erin'`, `Erin'`
-    Identifier,
+    /// An equal sign: `=`
+    Equal,
     /// An integer: `0`, `1`, `2`
     Integer,
+    /// Left curly braces: `{`
+    LeftBrace,
+    /// Left parenthesis: `(`
+    LeftParen,
+    /// Left square bracket: `[`
+    LeftSquare,
+    /// A lowercase identifier: `_erin_'`
+    LowerIdentifier,
     /// A float: `1.0`, `42.0`
     Number,
+    /// A period: `.`
+    Period,
+    /// Right curly braces: `}`
+    RightBrace,
+    /// Right parenthesis: `)`
+    RightParen,
+    /// Right squre bracket: `]`
+    RightSquare,
+    /// A semicolon: `;`
+    Semicolon,
     /// A string: `"let's all love lain"`
     String,
     /// An operator: `$`, `+`, `..`
     Symbol,
-    /// Reserved symbols: `.`, `=`, `\`, `(`, `[`, `{`, `}`, `]`, `)`
-    Syntax,
     /// An unknown token.
     Unknown(TokenError),
+    /// An uppercase identifier: `Erin_'`
+    UpperIdentifier,
     /// Whitespace characters.
     Whitespace,
 }
 
 /// A token in a source file.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TokenSpan {
     /// The beginning offset (inclusive).
     pub begin: usize,
@@ -156,7 +178,17 @@ impl<'a> Cursor<'a> {
             }
 
             // reserved syntax
-            ';' | '(' | ')' | '[' | ']' | '{' | '}' => TokenKind::Syntax,
+            initial @ (',' | ';' | '(' | ')' | '[' | ']' | '{' | '}') => match initial {
+                ',' => TokenKind::Comma,
+                ';' => TokenKind::Semicolon,
+                '(' => TokenKind::LeftParen,
+                ')' => TokenKind::RightParen,
+                '[' => TokenKind::LeftSquare,
+                ']' => TokenKind::RightSquare,
+                '{' => TokenKind::LeftBrace,
+                '}' => TokenKind::RightBrace,
+                _ => unreachable!(),
+            },
 
             // reserved syntax that can also be symbols if repeated
             initial @ (':' | '=' | '.') => {
@@ -164,7 +196,12 @@ impl<'a> Cursor<'a> {
                     self.take_while(|c| c.is_symbol() || c.is_punctuation() || c == initial);
                     TokenKind::Symbol
                 } else {
-                    TokenKind::Syntax
+                    match initial {
+                        ':' => TokenKind::Colon,
+                        '=' => TokenKind::Equal,
+                        '.' => TokenKind::Period,
+                        _ => unreachable!(),
+                    }
                 }
             }
 
@@ -175,9 +212,14 @@ impl<'a> Cursor<'a> {
             }
 
             // identifiers
-            initial if initial.is_letter() || initial == '_' => {
+            initial if initial.is_letter_lowercase() || initial == '_' => {
                 self.take_while(|c| c.is_letter() || c.is_number() || c == '\'' || c == '_');
-                TokenKind::Identifier
+                TokenKind::LowerIdentifier
+            }
+
+            initial if initial.is_letter_uppercase() => {
+                self.take_while(|c| c.is_letter() || c.is_number() || c == '\'' || c == '_');
+                TokenKind::UpperIdentifier
             }
 
             // whitespace
@@ -240,17 +282,17 @@ mod tests {
             TokenSpan {
                 begin: 0,
                 end: 4,
-                kind: TokenKind::Identifier,
+                kind: TokenKind::LowerIdentifier,
             },
             TokenSpan {
                 begin: 4,
                 end: 5,
-                kind: TokenKind::Syntax,
+                kind: TokenKind::Equal,
             },
             TokenSpan {
                 begin: 5,
                 end: 12,
-                kind: TokenKind::Identifier,
+                kind: TokenKind::LowerIdentifier,
             },
             TokenSpan {
                 begin: 12,
