@@ -1,9 +1,12 @@
 use std::iter::Peekable;
 
-use crate::lexer::{TokenKind, TokenSpan};
+use crate::lexer::{Lexer, TokenKind, TokenSpan};
 
 #[derive(Debug)]
 pub struct LowerName<'a>(TokenSpan, &'a str);
+
+#[derive(Debug)]
+pub struct UpperName<'a>(TokenSpan, &'a str);
 
 #[derive(Debug)]
 pub struct SyntaxToken<'a>(TokenSpan, &'a str);
@@ -32,113 +35,119 @@ pub enum Declaration<'a> {
     ValueExpr(LowerName<'a>, SyntaxToken<'a>, ValueRhs, SyntaxToken<'a>),
 }
 
-pub fn parse_skip_whitespace(tokens: &mut Peekable<impl Iterator<Item = TokenSpan>>) {
-    while let Some(TokenSpan {
-        kind: TokenKind::Whitespace,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next();
+pub struct Parser<'a> {
+    source: &'a str,
+    tokens: Peekable<Lexer<'a>>,
+}
+
+impl<'a> Parser<'a> {
+    pub fn new(source: &'a str) -> Self {
+        let tokens = Lexer::new(source).peekable();
+        Self { source, tokens }
     }
 }
 
-pub fn parse_lower_name<'a>(
-    source: &'a str,
-    tokens: &mut Peekable<impl Iterator<Item = TokenSpan>>,
-) -> Option<LowerName<'a>> {
-    let token = tokens.next()?;
-    if matches!(token.kind, TokenKind::LowerIdentifier) {
-        Some(LowerName(token, &source[token.begin..token.end]))
-    } else {
-        None
-    }
-}
-
-pub fn parse_syntax_token<'a>(
-    source: &'a str,
-    tokens: &mut Peekable<impl Iterator<Item = TokenSpan>>,
-    expected: TokenKind,
-) -> Option<SyntaxToken<'a>> {
-    let token = tokens.next()?;
-    match token.kind {
-        syntax_kind if syntax_kind == expected => {
-            Some(SyntaxToken(token, &source[token.begin..token.end]))
+impl<'a> Parser<'a> {
+    pub fn skip_whitespace(&mut self) {
+        while let Some(TokenSpan {
+            kind: TokenKind::Whitespace,
+            ..
+        }) = self.tokens.peek()
+        {
+            self.tokens.next();
         }
-        _ => None,
     }
-}
 
-pub fn parse_equal_or_colon<'a>(
-    source: &'a str,
-    tokens: &mut Peekable<impl Iterator<Item = TokenSpan>>,
-) -> Option<SyntaxToken<'a>> {
-    let token = tokens.next()?;
-    match token.kind {
-        TokenKind::Equal => Some(SyntaxToken(token, &source[token.begin..token.end])),
-        TokenKind::Colon => Some(SyntaxToken(token, &source[token.begin..token.end])),
-        _ => None,
+    pub fn lower_ident(&mut self) -> Option<LowerName<'a>> {
+        let token = self.tokens.next()?;
+        if matches!(token.kind, TokenKind::LowerIdentifier) {
+            Some(LowerName(token, &self.source[token.begin..token.end]))
+        } else {
+            None
+        }
     }
-}
 
-pub fn parse_declaration<'a>(
-    source: &'a str,
-    tokens: &mut Peekable<impl Iterator<Item = TokenSpan>>,
-) -> Option<Declaration<'a>> {
-    let identifier = parse_lower_name(source, tokens)?;
-    parse_skip_whitespace(tokens);
-    let equal_or_colon = parse_equal_or_colon(source, tokens)?;
-    match equal_or_colon {
-        SyntaxToken(_, "=") => {
-            parse_skip_whitespace(tokens);
-            let mut deferred = vec![];
-            loop {
-                if let TokenSpan {
-                    kind: TokenKind::Semicolon,
-                    ..
-                } = tokens.peek()?
-                {
-                    break;
+    pub fn upper_ident(&mut self) -> Option<UpperName<'a>> {
+        let token = self.tokens.next()?;
+        if matches!(token.kind, TokenKind::UpperIdentifier) {
+            Some(UpperName(token, &self.source[token.begin..token.end]))
+        } else {
+            None
+        }
+    }
+
+    pub fn declaration(&mut self) -> Option<Declaration<'a>> {
+        let lower_ident = self.lower_ident()?;
+        self.skip_whitespace();
+        match self.tokens.peek()?.kind {
+            TokenKind::Colon => {
+                let colon_span = self.tokens.next()?;
+                let colon_token =
+                    SyntaxToken(colon_span, &self.source[colon_span.begin..colon_span.end]);
+                self.skip_whitespace();
+                let mut deferred_spans = vec![];
+                loop {
+                    if let TokenSpan {
+                        kind: TokenKind::Semicolon,
+                        ..
+                    } = self.tokens.peek()?
+                    {
+                        break;
+                    } else {
+                        deferred_spans.push(self.tokens.next()?);
+                    }
                 }
-                deferred.push(tokens.next()?);
+                let deferred_tokens = TypeRhs::Deferred(deferred_spans);
+                let semicolon_span = self.tokens.next()?;
+                let semicolon_token = SyntaxToken(
+                    semicolon_span,
+                    &self.source[semicolon_span.begin..semicolon_span.end],
+                );
+                Some(Declaration::ValueType(
+                    lower_ident,
+                    colon_token,
+                    deferred_tokens,
+                    semicolon_token,
+                ))
             }
-            let semicolon = parse_syntax_token(source, tokens, TokenKind::Semicolon)?;
-            Some(Declaration::ValueExpr(
-                identifier,
-                equal_or_colon,
-                ValueRhs::Deferred(deferred),
-                semicolon,
-            ))
-        }
-        SyntaxToken(_, ":") => {
-            parse_skip_whitespace(tokens);
-            let mut deferred = vec![];
-            loop {
-                if let TokenSpan {
-                    kind: TokenKind::Semicolon,
-                    ..
-                } = tokens.peek()?
-                {
-                    break;
+            TokenKind::Equal => {
+                let equal_span = self.tokens.next()?;
+                let equal_token =
+                    SyntaxToken(equal_span, &self.source[equal_span.begin..equal_span.end]);
+                self.skip_whitespace();
+                let mut deferred_spans = vec![];
+                loop {
+                    if let TokenSpan {
+                        kind: TokenKind::Semicolon,
+                        ..
+                    } = self.tokens.peek()?
+                    {
+                        break;
+                    } else {
+                        deferred_spans.push(self.tokens.next()?);
+                    }
                 }
-                deferred.push(tokens.next()?);
+                let deferred_tokens = TypeRhs::Deferred(deferred_spans);
+                let semicolon_span = self.tokens.next()?;
+                let semicolon_token = SyntaxToken(
+                    semicolon_span,
+                    &self.source[semicolon_span.begin..semicolon_span.end],
+                );
+                Some(Declaration::ValueType(
+                    lower_ident,
+                    equal_token,
+                    deferred_tokens,
+                    semicolon_token,
+                ))
             }
-            let semicolon = parse_syntax_token(source, tokens, TokenKind::Semicolon)?;
-            Some(Declaration::ValueType(
-                identifier,
-                equal_or_colon,
-                TypeRhs::Deferred(deferred),
-                semicolon,
-            ))
+            _ => None,
         }
-        _ => None,
     }
 }
 
 #[test]
 fn it_works() {
-    let source = "main : Effect Unit;\nmain = logShow $ 1 + 2;";
-    let mut tokens = crate::lexer::lex(source).peekable();
-    dbg!(parse_declaration(source, &mut tokens));
-    parse_skip_whitespace(&mut tokens);
-    dbg!(parse_declaration(source, &mut tokens));
+    let source = "main : Effect Unit;";
+    let mut parser = Parser::new(source);
+    dbg!(parser.declaration());
 }

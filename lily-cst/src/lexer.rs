@@ -259,16 +259,27 @@ impl<'a> Cursor<'a> {
     }
 }
 
-/// Creates an iterator of tokens from a source file.
-pub fn lex(source: &str) -> impl Iterator<Item = TokenSpan> + '_ {
-    let mut cursor = Cursor::new(source);
-    std::iter::from_fn(move || {
-        if cursor.is_eof() {
+pub struct Lexer<'a> {
+    cursor: Cursor<'a>,
+}
+
+impl<'a> Lexer<'a> {
+    pub fn new(source: &'a str) -> Self {
+        let cursor = Cursor::new(source);
+        Self { cursor }
+    }
+}
+
+impl<'a> Iterator for Lexer<'a> {
+    type Item = TokenSpan;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cursor.is_eof() {
             None
-        } else {
-            Some(cursor.take_token())
+        }else {
+            Some(self.cursor.take_token())
         }
-    })
+    }
 }
 
 #[cfg(test)]
@@ -300,6 +311,6 @@ mod tests {
                 kind: TokenKind::String,
             },
         ];
-        assert_eq!(lex(source).collect::<Vec<_>>(), tokens);
+        assert_eq!(Lexer::new(source).collect::<Vec<_>>(), tokens);
     }
 }
