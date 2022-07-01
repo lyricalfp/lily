@@ -127,13 +127,13 @@ impl<'a> Parser<'a> {
                         deferred_spans.push(self.tokens.next()?);
                     }
                 }
-                let deferred_tokens = TypeRhs::Deferred(deferred_spans);
+                let deferred_tokens = ValueRhs::Deferred(deferred_spans);
                 let semicolon_span = self.tokens.next()?;
                 let semicolon_token = SyntaxToken(
                     semicolon_span,
                     &self.source[semicolon_span.begin..semicolon_span.end],
                 );
-                Some(Declaration::ValueType(
+                Some(Declaration::ValueExpr(
                     lower_ident,
                     equal_token,
                     deferred_tokens,
