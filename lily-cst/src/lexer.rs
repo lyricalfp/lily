@@ -1,135 +1,120 @@
-//! A tokenizer implementation in the spirit of `rustc_lexer`.
-//!
-//! This tokenizer is simplistic in that the `TokenSpan` type encodes
-//! the `begin` and `end` offsets of a token in the source file, as
-//! opposed to directly storing the string slices. Furthermore, the
-//! `TokenKind` type is also designed to be more general with its
-//! categories; for instance, it encodes both lowercase names (used in
-//! values) and uppercase names (used in types) under the `Identifier`
-//! variant.
 use std::str::Chars;
 
 use unicode_categories::UnicodeCategories;
 
-/// An error for an unknown token.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum TokenError {
-    UnfinishedBlockComment,
-    UnfinishedCharacter,
-    UnfinishedNumber,
-    UnfinishedString,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommentK {
+    Block,
+    Line,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IdentifierK {
+    Do,
+    Let,
+    Lower,
+    Upper,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DelimiterK {
+    Round,
+    Square,
+    Brace,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperatorK {
+    ArrowLeft,
+    ArrowRight,
+    Backslash,
+    Colon,
+    Comma,
+    Equal,
+    Normal,
+    Period,
+    Pipe,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DigitK {
+    Float,
+    Int,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnknownK {
+    UnfinishedComment,
+    UnfinishedFloat,
     UnknownToken,
 }
 
-/// The kind of the spanned token.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum TokenKind {
-    /// A backslash: `\`
-    Backslash,
-    /// A character: `'a'`
-    Character,
-    /// A colon: `:`
-    Colon,
-    /// A comma: `,`
-    Comma,
-    /// A comment block: `{- hey! -}`
-    CommentBlock,
-    /// A comment line: `-- listen!`
-    CommentLine,
-    /// An equal sign: `=`
-    Equal,
-    /// An integer: `0`, `1`, `2`
-    Integer,
-    /// Left curly braces: `{`
-    LeftBrace,
-    /// Left parenthesis: `(`
-    LeftParen,
-    /// Left square bracket: `[`
-    LeftSquare,
-    /// A lowercase identifier: `_erin_'`
-    LowerIdentifier,
-    /// A float: `1.0`, `42.0`
-    Number,
-    /// A period: `.`
-    Period,
-    /// Right curly braces: `}`
-    RightBrace,
-    /// Right parenthesis: `)`
-    RightParen,
-    /// Right squre bracket: `]`
-    RightSquare,
-    /// A semicolon: `;`
-    Semicolon,
-    /// A string: `"let's all love lain"`
-    String,
-    /// An operator: `$`, `+`, `..`
-    Symbol,
-    /// An unknown token.
-    Unknown(TokenError),
-    /// An uppercase identifier: `Erin_'`
-    UpperIdentifier,
-    /// Whitespace characters.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LayoutK {
+    Begin,
+    End,
+    Separator,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenK {
+    CloseDelimiter(DelimiterK),
+    Comment(CommentK),
+    Digit(DigitK),
+    Identifier(IdentifierK),
+    Layout(LayoutK),
+    OpenDelimiter(DelimiterK),
+    Operator(OperatorK),
+    Unknown(UnknownK),
     Whitespace,
 }
 
-/// A token in a source file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TokenSpan {
-    /// The beginning offset (inclusive).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Token {
     pub begin: usize,
-    /// The ending offset (exclusive).
     pub end: usize,
-    /// The kind of the token.
-    pub kind: TokenKind,
+    pub kind: TokenK,
 }
 
-/// The current state of the tokenizer.
-pub struct Cursor<'a> {
-    /// The length of the source file.
+struct Cursor<'a> {
     length: usize,
-    /// The characters in the source file.
+    source: &'a str,
     chars: Chars<'a>,
 }
 
+const EOF_CHAR: char = '\0';
+
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str) -> Cursor<'a> {
-        Cursor {
+    pub fn new(source: &'a str) -> Self {
+        Self {
             length: source.len(),
+            source,
             chars: source.chars(),
         }
     }
 
-    /// Determines if the cursor is at the end.
     pub fn is_eof(&self) -> bool {
         self.chars.as_str().is_empty()
     }
 
-    /// The number of characters already consumed.
-    pub fn consumed_len(&self) -> usize {
+    pub fn consumed(&self) -> usize {
         self.length - self.chars.as_str().len()
     }
 
-    /// Peeks a single character into the future, returning `'\0'` if
-    /// there's no more characters.
     pub fn peek_1(&mut self) -> char {
-        self.chars.clone().next().unwrap_or('\0')
+        self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
 
-    /// Peeks 2 characters into the future, returning `'\0'` if
-    /// there's no more characters.
     pub fn peek_2(&mut self) -> char {
         let mut chars = self.chars.clone();
         chars.next();
-        chars.next().unwrap_or('\0')
+        chars.next().unwrap_or(EOF_CHAR)
     }
 
-    /// Takes a single character.
     pub fn take(&mut self) -> Option<char> {
         self.chars.next()
     }
 
-    /// Takes characters while a predicate matches and the cursor is
-    /// not at the end of the file.
     pub fn take_while(&mut self, predicate: impl Fn(char) -> bool) {
         while predicate(self.peek_1()) && !self.is_eof() {
             self.take();
@@ -138,124 +123,99 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    pub fn take_token(&mut self) -> TokenSpan {
-        let begin = self.consumed_len();
+    pub fn take_token(&mut self) -> Token {
+        let begin = self.consumed();
         let kind = match self.take().unwrap() {
-            // block comments
+            // Block Comments
             '{' if self.peek_1() == '-' => {
                 self.take();
                 loop {
-                    self.take_while(|c| c != '-');
-                    if self.peek_1() == '-' && self.peek_2() == '}' {
+                    if self.is_eof() {
+                        break TokenK::Unknown(UnknownK::UnfinishedComment);
+                    } else if self.peek_1() == '-' && self.peek_2() == '}' {
                         self.take();
                         self.take();
-                        break TokenKind::CommentBlock;
-                    } else if self.take() == None {
-                        break TokenKind::Unknown(TokenError::UnfinishedBlockComment);
+                        break TokenK::Comment(CommentK::Block);
+                    } else {
+                        self.take();
                     }
                 }
             }
-
-            // strings
-            '"' => {
-                self.take_while(|c| c != '"');
-                if self.take() == Some('"') {
-                    TokenKind::String
-                } else {
-                    TokenKind::Unknown(TokenError::UnfinishedString)
-                }
-            }
-
-            // characters
-            '\'' => {
-                self.take();
-                if self.peek_1() == '\'' {
-                    self.take();
-                    TokenKind::Character
-                } else {
-                    TokenKind::Unknown(TokenError::UnfinishedCharacter)
-                }
-            }
-
-            // reserved syntax
-            initial @ (',' | ';' | '(' | ')' | '[' | ']' | '{' | '}') => match initial {
-                ',' => TokenKind::Comma,
-                ';' => TokenKind::Semicolon,
-                '(' => TokenKind::LeftParen,
-                ')' => TokenKind::RightParen,
-                '[' => TokenKind::LeftSquare,
-                ']' => TokenKind::RightSquare,
-                '{' => TokenKind::LeftBrace,
-                '}' => TokenKind::RightBrace,
-                _ => unreachable!(),
-            },
-
-            // reserved syntax that can also be symbols if repeated
-            initial @ (':' | '=' | '.') => {
-                if self.peek_1() == initial {
-                    self.take_while(|c| c.is_symbol() || c.is_punctuation() || c == initial);
-                    TokenKind::Symbol
-                } else {
-                    match initial {
-                        ':' => TokenKind::Colon,
-                        '=' => TokenKind::Equal,
-                        '.' => TokenKind::Period,
-                        _ => unreachable!(),
-                    }
-                }
-            }
-
-            // comment lines
+            // Open Parentheses
+            '(' => TokenK::OpenDelimiter(DelimiterK::Round),
+            '[' => TokenK::OpenDelimiter(DelimiterK::Square),
+            '{' => TokenK::OpenDelimiter(DelimiterK::Brace),
+            // Close Parentheses
+            ')' => TokenK::CloseDelimiter(DelimiterK::Round),
+            ']' => TokenK::CloseDelimiter(DelimiterK::Square),
+            '}' => TokenK::CloseDelimiter(DelimiterK::Brace),
+            // Built-in Symbols
+            ',' => TokenK::Operator(OperatorK::Comma),
+            '\\' => TokenK::Operator(OperatorK::Backslash),
+            // Comment Line
             '-' if self.peek_1() == '-' => {
                 self.take_while(|c| c != '\n');
-                TokenKind::CommentLine
+                TokenK::Comment(CommentK::Line)
             }
-
-            // identifiers
+            // Compound Symbols
+            initial if initial.is_symbol() || initial.is_punctuation() => {
+                self.take_while(|c| !"(){}[]".contains(c) && (c.is_symbol() || c.is_punctuation()));
+                let end = self.consumed();
+                TokenK::Operator(match &self.source[begin..end] {
+                    "->" => OperatorK::ArrowRight,
+                    "<-" => OperatorK::ArrowLeft,
+                    "=" => OperatorK::Equal,
+                    ":" => OperatorK::Colon,
+                    "." => OperatorK::Period,
+                    "|" => OperatorK::Pipe,
+                    _ => OperatorK::Normal,
+                })
+            }
+            // Identifiers
             initial if initial.is_letter_lowercase() || initial == '_' => {
-                self.take_while(|c| c.is_letter() || c.is_number() || c == '\'' || c == '_');
-                TokenKind::LowerIdentifier
+                self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
+                let end = self.consumed();
+                TokenK::Identifier(match &self.source[begin..end] {
+                    "let" => IdentifierK::Let,
+                    "do" => IdentifierK::Do,
+                    _ => IdentifierK::Lower,
+                })
             }
-
             initial if initial.is_letter_uppercase() => {
-                self.take_while(|c| c.is_letter() || c.is_number() || c == '\'' || c == '_');
-                TokenKind::UpperIdentifier
+                self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
+                TokenK::Identifier(IdentifierK::Upper)
             }
-
-            // whitespace
-            initial if initial.is_whitespace() => {
-                self.take_while(|c| c.is_whitespace());
-                TokenKind::Whitespace
-            }
-
-            // integers and floats
-            initial if initial.is_number() => {
-                self.take_while(|c| c.is_number());
+            // Digits
+            initial if initial.is_ascii_digit() => {
+                self.take_while(|c| c.is_ascii_digit());
                 if self.peek_1() == '.' {
-                    self.take();
-                    if self.peek_1().is_number() {
-                        self.take_while(|c| c.is_number());
-                        TokenKind::Number
+                    // 1..
+                    if self.peek_2() == '.' {
+                        TokenK::Digit(DigitK::Int)
+                    // 1.2
+                    } else if self.peek_2().is_ascii_digit() {
+                        self.take();
+                        self.take_while(|c| c.is_ascii_digit());
+                        TokenK::Digit(DigitK::Float)
+                    // 1.
                     } else {
-                        TokenKind::Unknown(TokenError::UnfinishedNumber)
+                        self.take();
+                        TokenK::Unknown(UnknownK::UnfinishedFloat)
                     }
                 } else {
-                    TokenKind::Integer
+                    TokenK::Digit(DigitK::Int)
                 }
             }
-
-            // operators
-            initial if initial.is_symbol() || initial.is_punctuation() => {
-                self.take_while(|c| c.is_symbol() || c.is_punctuation());
-                TokenKind::Symbol
+            // Whitespace
+            initial if initial.is_whitespace() => {
+                self.take_while(|c| c.is_whitespace());
+                TokenK::Whitespace
             }
-
-            // everything else
-            _ => TokenKind::Unknown(TokenError::UnknownToken),
+            // Unknown Token
+            _ => TokenK::Unknown(UnknownK::UnknownToken),
         };
-
-        let end = self.consumed_len();
-        TokenSpan { begin, end, kind }
+        let end = self.consumed();
+        Token { begin, end, kind }
     }
 }
 
@@ -265,18 +225,19 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
-        let cursor = Cursor::new(source);
-        Self { cursor }
+        Self {
+            cursor: Cursor::new(source),
+        }
     }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = TokenSpan;
+    type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.cursor.is_eof() {
             None
-        }else {
+        } else {
             Some(self.cursor.take_token())
         }
     }
@@ -284,33 +245,53 @@ impl<'a> Iterator for Lexer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{CommentK, DigitK, Lexer, OperatorK, Token, TokenK};
 
     #[test]
-    fn it_tokenizes_without_spaces() {
-        let source = "main=logShow\"a\"";
-        let tokens = vec![
-            TokenSpan {
+    fn double_period_after_int() {
+        let source = "1..2";
+        let lexer = Lexer::new(source);
+        let expected = vec![
+            Token {
                 begin: 0,
+                end: 1,
+                kind: TokenK::Digit(DigitK::Int),
+            },
+            Token {
+                begin: 1,
+                end: 3,
+                kind: TokenK::Operator(OperatorK::Normal),
+            },
+            Token {
+                begin: 3,
                 end: 4,
-                kind: TokenKind::LowerIdentifier,
-            },
-            TokenSpan {
-                begin: 4,
-                end: 5,
-                kind: TokenKind::Equal,
-            },
-            TokenSpan {
-                begin: 5,
-                end: 12,
-                kind: TokenKind::LowerIdentifier,
-            },
-            TokenSpan {
-                begin: 12,
-                end: 15,
-                kind: TokenKind::String,
+                kind: TokenK::Digit(DigitK::Int),
             },
         ];
-        assert_eq!(Lexer::new(source).collect::<Vec<_>>(), tokens);
+        assert_eq!(lexer.collect::<Vec<_>>(), expected);
+    }
+
+    #[test]
+    fn block_comment_in_between() {
+        let source = "1{-hello-}2";
+        let lexer = Lexer::new(source);
+        let expected = vec![
+            Token {
+                begin: 0,
+                end: 1,
+                kind: TokenK::Digit(DigitK::Int),
+            },
+            Token {
+                begin: 1,
+                end: 10,
+                kind: TokenK::Comment(CommentK::Block),
+            },
+            Token {
+                begin: 10,
+                end: 11,
+                kind: TokenK::Digit(DigitK::Int),
+            },
+        ];
+        assert_eq!(lexer.collect::<Vec<_>>(), expected);
     }
 }
