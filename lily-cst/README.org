@@ -1,0 +1,104 @@
+#+title: Concrete Syntax Tree
+#+author: purefunctor
+
+This crate defines the concrete syntax tree for =lily=.
+
+* concrete syntax trees?
+
+Unlike an abstract syntax tree, which models the source file in a manner that's easy to consume by the compiler for tasks such as type checking and code generation, concrete syntax trees model source files as they're /actually/ represented. For instance, a concrete syntax tree may preserve information such as comment positions or even the precise location of syntactic tokens; this effectively allows something like a source file formatter to be implemented.
+
+* syntax
+
+The following section details the syntax of the different constructs in =lily=. I would describe =lily='s syntax to be quirky, chaotic, and elegant. I've chosen to omit popular lowercase identifiers such as =data=, =newtype=, =class=, =instance=, =where=, etc. as to achieve brevity through "carefully"-placed symbols.
+
+** module header
+
+The module header takes the following form:
+
+#+begin_src haskell
+module Main
+#+end_src
+
+** data types
+
+The syntax for user-defined data types is similar to that of GADT syntax in Haskell and other FPLs. However, =lily= does not support the notion of GADTs themselves considering their difficulty to implement. In turn, this makes it so that syntactic checks are run to ensure that the "final" type in the chain of arrows =(->)= is the type itself.
+
+#+begin_src haskell
+List : Type -> Type
+List a ?
+  Nil : List a
+  Cons : a -> List a -> List a
+#+end_src
+
+Furthermore, determining whether a data type is a =newtype= involves some syntactic analysis as well. Specifically, any data type that has a single constructor which in turn has a single argument is treated as a =newtype=.
+
+#+begin_src haskell
+Identity : Type -> Type
+Identity a ?
+  Identity : a -> Identity a
+#+end_src
+
+** classes, instances
+
+The simplest practical type class can be defined through the following syntax:
+
+#+begin_src haskell
+Eq : Type -> Constraint
+Eq a ?
+  equal : a -> a -> Boolean
+#+end_src
+
+Superclasses can be added using =>=:
+
+#+begin_src haskell
+Ord : Type -> Constraint
+Ord a > Eq a ?
+  compare : a -> a -> Ordering
+#+end_src
+
+"Functional dependencies" use the following form:
+
+#+begin_src haskell
+MoandState : Type -> (Type -> Type) -> Constraint
+MonadState s m > Monad m > { m -> s } ?
+  state : forall a. (s -> (Tuple a s)) -> m a
+#+end_src
+
+As for instances, a name has to be provided, like so:
+
+#+begin_src haskell
+eqInt : Instance (Eq _)
+eqInt < Eq Int ?
+  equal : Int -> Int -> Boolean
+  equal = ...
+
+ordInt : Instance (Ord _)
+ordInt < Ord Int ?
+  compare : Int -> Int -> Ordering
+  compare = ...
+#+end_src
+
+Additional constraints can be inserted using =<=:
+
+#+begin_src haskell
+eqArray : Instance (Eq _)
+eqArray < Eq (Array a) < Eq a ?
+  equal : Array a -> Array a -> Boolean
+  equal = ...
+#+end_src
+
+Instance chains are defined through the following form:
+
+#+begin_src haskell
+showN : InstanceChain (Show _)
+showN ?
+  show0 : Instance (Show _)
+  show0 < Show (a /\ a) ?
+    show : (a /\ a) -> String
+    show = ...
+
+  show1 : Instance (Show _)
+  show1 < Show a ?
+    show : a -> String
+    show = ...
+#+end_src
