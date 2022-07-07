@@ -1,4 +1,3 @@
-#+title: Concrete Syntax Tree
 #+author: purefunctor
 
 This crate defines the concrete syntax tree for =lily=.
@@ -30,39 +29,34 @@ List a ?
   Cons : a -> List a -> List a
 #+end_src
 
-Furthermore, determining whether a data type is a =newtype= involves some syntactic analysis as well. Specifically, any data type that has a single constructor which in turn has a single argument is treated as a =newtype=.
+Furthermore, determining whether a data type is a =newtype= involves some syntactic analysis as well. Specifically, any data type that has a single constructor which in turn has a single argument is treated as a =newtype=. An underscore =_= can be used as shorthand if the constructor has the same name as the type.
 
 #+begin_src haskell
 Identity : Type -> Type
 Identity a ?
-  Identity : a -> Identity a
+  _ : a -> Identity a
 #+end_src
 
-Closed type families are defined using the following form, and are disambiguated from data types through the =~= sentinel. Similarly, the family name can be omitted using =_=.
+Closed type families use a familiar GADT-like syntax, but they're disambiguated from data types through the use of =!= instead of =:= as a sentinel. Since the name of the type family is repeated in its "instances", an underscore can also be used as shorthand syntax.
 
 #+begin_src haskell
 Equal : Type -> Type -> Boolean
 Equal a b ?
-  Equal ~ a -> a -> True
-  _     ~ a -> b -> False
+  Equal ! a -> a -> True
+  _     ! a -> b -> False
 #+end_src
 
-Similarly, this syntax is also used for type synonyms, which can be determined if a "family" has a single "constructor" with a single argument.
+This syntax is also used to define type synonyms. Much like =newtype=, the disambiguation happens through static analysis. A type family is a type synonym that has a single instance which in turn only has non-repeating variable binders. Moreover, =_= can be used as a shorthand much like in normal type families.
 
 #+begin_src haskell
 Matrix : Type -> Type
 Matrix a ?
-  Matrix ~ a -> Array (Array a)
-  --   _ ~ a -> Array (Array a)
+  _ ! a -> Array (Array a)
 #+end_src
 
-** type families
+** type classes, instances
 
-
-
-** classes, instances
-
-The simplest practical type class can be defined through the following syntax:
+In =lily= the simplest practical type class can be defined using the following GADT-like form. Instead of an uppercase name however, methods start with a valid lowercase identifier.
 
 #+begin_src haskell
 Eq : Type -> Constraint
@@ -70,7 +64,7 @@ Eq a ?
   equal : a -> a -> Boolean
 #+end_src
 
-Superclasses can be added using =>=:
+In the event that superclasses are needed to be declared, such is the case for =Ord=, the =>= sentinel is used.
 
 #+begin_src haskell
 Ord : Type -> Constraint
@@ -78,7 +72,7 @@ Ord a > Eq a ?
   compare : a -> a -> Ordering
 #+end_src
 
-"Functional dependencies" use the following form:
+For type classes with multiple type parameters, a minimal form of functional dependencies is provided. More specifically, the set-like syntax at the end of the =>= chain determines which type variables are enough to determine an instance for a particular type class.
 
 #+begin_src haskell
 MoandState : Type -> (Type -> Type) -> Constraint
@@ -86,21 +80,21 @@ MonadState s m > Monad m > { m } ?
   state : forall a. (s -> (Tuple a s)) -> m a
 #+end_src
 
-As for instances, a name has to be provided, like so:
+Instance declarations for type classes are required to have names, like the following form:
 
 #+begin_src haskell
-eqInt : Instance (Eq _)
+eqInt : Instance
 eqInt < Eq Int ?
   equal : Int -> Int -> Boolean
   equal = ...
 
-ordInt : Instance (Ord _)
+ordInt : Instance
 ordInt < Ord Int ?
   compare : Int -> Int -> Ordering
   compare = ...
 #+end_src
 
-Additional constraints can be inserted using =<=:
+Moreover, additional constraints can be inserted using the =<= sentinel:
 
 #+begin_src haskell
 eqArray : Instance (Eq _)
@@ -109,18 +103,20 @@ eqArray < Eq (Array a) < Eq a ?
   equal = ...
 #+end_src
 
-Instance chains are defined through the following form:
+Since multiple type class parameters often bring about overlapping instances, =lily= also provides syntax for defining instance chains.
 
 #+begin_src haskell
-showN : InstanceChain (Show _)
-showN ?
-  show0 : Instance (Show _)
-  show0 < Show (a /\ a) ?
-    show : (a /\ a) -> String
-    show = ...
+F : Type -> Type -> Constraint
+F a b ?
+  f : a -> b -> String
 
-  show1 : Instance (Show _)
-  show1 < Show a ?
-    show : a -> String
-    show = ...
+fDefault : Chain
+fDefault ?
+  fInt : Instance
+  fInt < F Int a ?
+    f = ...
+
+  fDouble : Instance
+  fDouble < F a Double ?
+    f = ...
 #+end_src
