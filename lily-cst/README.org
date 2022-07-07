@@ -38,6 +38,28 @@ Identity a ?
   Identity : a -> Identity a
 #+end_src
 
+Closed type families are defined using the following form, and are disambiguated from data types through the =~= sentinel. Similarly, the family name can be omitted using =_=.
+
+#+begin_src haskell
+Equal : Type -> Type -> Boolean
+Equal a b ?
+  Equal ~ a -> a -> True
+  _     ~ a -> b -> False
+#+end_src
+
+Similarly, this syntax is also used for type synonyms, which can be determined if a "family" has a single "constructor" with a single argument.
+
+#+begin_src haskell
+Matrix : Type -> Type
+Matrix a ?
+  Matrix ~ a -> Array (Array a)
+  --   _ ~ a -> Array (Array a)
+#+end_src
+
+** type families
+
+
+
 ** classes, instances
 
 The simplest practical type class can be defined through the following syntax:
@@ -60,7 +82,7 @@ Ord a > Eq a ?
 
 #+begin_src haskell
 MoandState : Type -> (Type -> Type) -> Constraint
-MonadState s m > Monad m > { m -> s } ?
+MonadState s m > Monad m > { m } ?
   state : forall a. (s -> (Tuple a s)) -> m a
 #+end_src
 
