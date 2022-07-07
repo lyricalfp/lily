@@ -35,30 +35,46 @@ Identity a ?
   _ : a -> Identity a
 #+end_src
 
-Closed type families use a familiar GADT-like syntax, but they're disambiguated from data types through the use of =!= instead of =:= as a sentinel. Since the name of the type family is repeated in its "instances", an underscore can also be used as shorthand syntax.
+Constructors can be omitted and replaced with =...= for creating nullary data types.
+
+#+begin_src haskell
+Void : Type
+Void ? ...
+#+end_src
+
+** closed type families
+
+Closed type families use a familiar GADT-like syntax, but they're disambiguated from data types through the use of =!= instead of =?= as a sentinel. Since the name of the type family is repeated in its "instances", an underscore can also be used as shorthand syntax.
 
 #+begin_src haskell
 Equal : Type -> Type -> Boolean
-Equal a b ?
-  Equal ! a -> a -> True
-  _     ! a -> b -> False
+Equal a b !
+  Equal : a -> a -> True
+  _     : a -> b -> False
 #+end_src
 
 This syntax is also used to define type synonyms. Much like =newtype=, the disambiguation happens through static analysis. A type family is a type synonym that has a single instance which in turn only has non-repeating variable binders. Moreover, =_= can be used as a shorthand much like in normal type families.
 
 #+begin_src haskell
 Matrix : Type -> Type
-Matrix a ?
-  _ ! a -> Array (Array a)
+Matrix a !
+  _ : a -> Array (Array a)
+#+end_src
+
+Instances can be omitted and replaced with =...= for creating nullary type families.
+
+#+begin_src haskell
+Equal : Type -> Type -> Boolean
+Equal a b ! ...
 #+end_src
 
 ** type classes, instances
 
-In =lily= the simplest practical type class can be defined using the following GADT-like form. Instead of an uppercase name however, methods start with a valid lowercase identifier.
+In =lily= the simplest practical type class can be defined using the following GADT-like form. Like with how type families are differentiated from data types, type classes use =|= as a sentinel.
 
 #+begin_src haskell
 Eq : Type -> Constraint
-Eq a ?
+Eq a |
   equal : a -> a -> Boolean
 #+end_src
 
@@ -66,7 +82,7 @@ In the event that superclasses are needed to be declared, such is the case for =
 
 #+begin_src haskell
 Ord : Type -> Constraint
-Ord a > Eq a ?
+Ord a > Eq a |
   compare : a -> a -> Ordering
 #+end_src
 
@@ -74,7 +90,7 @@ For type classes with multiple type parameters, a minimal form of functional dep
 
 #+begin_src haskell
 MoandState : Type -> (Type -> Type) -> Constraint
-MonadState s m > Monad m > { m } ?
+MonadState s m > Monad m > { m } |
   state : forall a. (s -> (Tuple a s)) -> m a
 #+end_src
 
@@ -82,12 +98,12 @@ Instance declarations for type classes are required to have names, like the foll
 
 #+begin_src haskell
 eqInt : Instance
-eqInt < Eq Int ?
+eqInt < Eq Int |
   equal : Int -> Int -> Boolean
   equal = ...
 
 ordInt : Instance
-ordInt < Ord Int ?
+ordInt < Ord Int |
   compare : Int -> Int -> Ordering
   compare = ...
 #+end_src
@@ -96,7 +112,7 @@ Moreover, additional constraints can be inserted using the =<= sentinel:
 
 #+begin_src haskell
 eqArray : Instance (Eq _)
-eqArray < Eq (Array a) < Eq a ?
+eqArray < Eq (Array a) < Eq a |
   equal : Array a -> Array a -> Boolean
   equal = ...
 #+end_src
@@ -105,16 +121,26 @@ Since multiple type class parameters often bring about overlapping instances, =l
 
 #+begin_src haskell
 F : Type -> Type -> Constraint
-F a b ?
+F a b |
   f : a -> b -> String
 
 fDefault : Chain
-fDefault ?
+fDefault |
   fInt : Instance
-  fInt < F Int a ?
+  fInt < F Int a |
     f = ...
 
   fDouble : Instance
-  fDouble < F a Double ?
+  fDouble < F a Double |
     f = ...
+#+end_src
+
+Nullary type classes and instances can be defined by using =...= syntax.
+
+#+begin_src haskell
+G : Constraint
+G | ...
+
+gDefault : Instance
+gDefault | ...
 #+end_src
