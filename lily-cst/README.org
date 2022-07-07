@@ -1,7 +1,5 @@
 #+author: purefunctor
 
-This crate defines the concrete syntax tree for =lily=.
-
 * concrete syntax trees?
 
 Unlike an abstract syntax tree, which models the source file in a manner that's easy to consume by the compiler for tasks such as type checking and code generation, concrete syntax trees model source files as they're /actually/ represented. For instance, a concrete syntax tree may preserve information such as comment positions or even the precise location of syntactic tokens; this effectively allows something like a source file formatter to be implemented.
