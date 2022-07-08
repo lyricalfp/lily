@@ -144,3 +144,65 @@ G | ...
 gDefault : Instance
 gDefault | ...
 #+end_src
+
+** values and expressions
+
+The syntax for value bindings in =lily= use familiar ML-style syntax, where a lowercase identifier follows === for the value declaration or =:= for its type declaration.
+
+#+begin_src haskell
+x : Int
+x = 42
+#+end_src
+
+As for functions, =lily= does not allow direct pattern matching on the left-hand side of the value declaration, and only accepts variable or null binders; this is chosen to preserve the brevity of the language. Instead, =case= expressions are provided which also allows for lambda-like syntax.
+
+#+begin_src haskell
+-- no
+head : forall a. List a -> Maybe a
+head (Cons x _) = Just x
+head Nil        = Nothing
+
+-- yes
+head : forall a. List a -> Maybe a
+head xs = case xs of
+  | Cons x _ -> Just x
+  | Nil      -> Nothing
+  
+head : forall a. List a -> Maybe a
+head = case _ of 
+  | Cons x _ -> Just x
+  | Nil      -> Nothing
+#+end_src
+
+Local bindings can be declared using the =let= expressions. While convenient, =where= syntax is omitted as it disallows code to be written and read in a linear top-down, left-to-right manner, as opposed to the use of =let= expressions and statements.
+
+#+begin_src haskell
+y : Int
+y =
+  let
+    x : Int
+    x = 1
+  in
+    x + x
+#+end_src
+
+Syntax for =do= notation as well as =let= statements is also provided.
+
+#+begin_src haskell
+main : Effect Unit
+main = do
+  name <- getLine
+  let message = "Hello, " <> name
+  log message
+#+end_src
+
+As for ternaries, =if=-=then=-=else= expressions also exist.
+
+#+begin_src haskell
+yesOrNo : Int -> Boolean
+yesOrNo threshold =
+  if threshold > 50 then
+    True
+  else
+    False
+#+end_src
