@@ -85,7 +85,7 @@ struct Cursor<'a> {
 const EOF_CHAR: char = '\0';
 
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str) -> Self {
+    fn new(source: &'a str) -> Self {
         Self {
             length: source.len(),
             source,
@@ -93,29 +93,29 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    pub fn is_eof(&self) -> bool {
+    fn is_eof(&self) -> bool {
         self.chars.as_str().is_empty()
     }
 
-    pub fn consumed(&self) -> usize {
+    fn consumed(&self) -> usize {
         self.length - self.chars.as_str().len()
     }
 
-    pub fn peek_1(&mut self) -> char {
+    fn peek_1(&mut self) -> char {
         self.chars.clone().next().unwrap_or(EOF_CHAR)
     }
 
-    pub fn peek_2(&mut self) -> char {
+    fn peek_2(&mut self) -> char {
         let mut chars = self.chars.clone();
         chars.next();
         chars.next().unwrap_or(EOF_CHAR)
     }
 
-    pub fn take(&mut self) -> Option<char> {
+    fn take(&mut self) -> Option<char> {
         self.chars.next()
     }
 
-    pub fn take_while(&mut self, predicate: impl Fn(char) -> bool) {
+    fn take_while(&mut self, predicate: impl Fn(char) -> bool) {
         while predicate(self.peek_1()) && !self.is_eof() {
             self.take();
         }
@@ -123,7 +123,7 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    pub fn take_token(&mut self) -> Token {
+    fn take_token(&mut self) -> Token {
         let begin = self.consumed();
         let kind = match self.take().unwrap() {
             // Block Comments
