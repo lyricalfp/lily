@@ -28,12 +28,15 @@ pub enum OperatorK {
     ArrowLeft,
     ArrowRight,
     Backslash,
+    Bang,
     Colon,
     Comma,
     Equal,
     Normal,
     Period,
     Pipe,
+    Question,
+    Underscore,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,6 +70,7 @@ pub enum TokenK {
     Operator(OperatorK),
     Unknown(UnknownK),
     Whitespace,
+    Eof,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,6 +172,9 @@ impl<'a> Cursor<'a> {
                     ":" => OperatorK::Colon,
                     "." => OperatorK::Period,
                     "|" => OperatorK::Pipe,
+                    "?" => OperatorK::Question,
+                    "!" => OperatorK::Bang,
+                    "_" => OperatorK::Underscore,
                     _ => OperatorK::Normal,
                 })
             }
