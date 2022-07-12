@@ -1,4 +1,6 @@
-use std::{collections::VecDeque, iter::Peekable};
+use std::collections::VecDeque;
+
+use peekmore::{PeekMore, PeekMoreIterator};
 
 use crate::lexer::{LayoutK, Lexer, OperatorK, Token, TokenK};
 
@@ -25,7 +27,7 @@ impl DelimiterK {
 pub struct Engine<'a> {
     source: &'a str,
     offsets: Vec<usize>,
-    lexer: Peekable<Lexer<'a>>,
+    lexer: PeekMoreIterator<Lexer<'a>>,
     current: Token,
     stack: Vec<(Position, DelimiterK)>,
     queue: VecDeque<Token>,
@@ -40,7 +42,7 @@ impl<'a> Engine<'a> {
             offsets.push(offset);
             offset += line.len() + 1
         }
-        let mut lexer = Lexer::new(source).peekable();
+        let mut lexer = Lexer::new(source).peekmore();
         let current = lexer.next().expect("non-empty lexer");
         let stack = vec![(
             Position {
@@ -81,6 +83,23 @@ impl<'a> Engine<'a> {
             column,
         }
     }
+
+    fn peek(&mut self) -> Token {
+        let token = loop {
+            match self.lexer.peek_next() {
+                Some(token) => {
+                    if let TokenK::Whitespace = token.kind {
+                        continue;
+                    } else {
+                        break *token;
+                    }
+                }
+                None => panic!("non-eof"),
+            }
+        };
+        self.lexer.reset_cursor();
+        token
+    }
 }
 
 impl<'a> Engine<'a> {
@@ -110,7 +129,7 @@ impl<'a> Engine<'a> {
     }
 
     fn insert_begin(&mut self, delimiter: DelimiterK) {
-        let next_offset = self.lexer.peek().expect("non-eof").begin;
+        let next_offset = self.peek().begin;
         let next_position = self.get_position(next_offset);
 
         let recent_indented = self
@@ -228,8 +247,8 @@ fn it_works() {
 Identity a ?
   _ : a -> Identity a
 
-Equal a b !
-  _ : a -> a -> True
+  Equal a b !
+    _ : a -> a -> True
 
 Eq a |
   eq : a -> a -> Boolean
