@@ -29,7 +29,7 @@ pub struct Engine<'a> {
     current: Token,
     stack: Vec<(Position, DelimiterK)>,
     queue: VecDeque<Token>,
-    exhausted: bool,
+    keep_going: bool,
 }
 
 impl<'a> Engine<'a> {
@@ -51,7 +51,7 @@ impl<'a> Engine<'a> {
             DelimiterK::Root,
         )];
         let queue = VecDeque::default();
-        let exhausted = false;
+        let keep_going = true;
         Self {
             source,
             offsets,
@@ -59,7 +59,7 @@ impl<'a> Engine<'a> {
             current,
             stack,
             queue,
-            exhausted,
+            keep_going,
         }
     }
 
@@ -234,16 +234,16 @@ impl<'a> Iterator for Engine<'a> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.exhausted {
-            return self.queue.pop_back();
-        } else {
+        if self.keep_going {
             self.insert_layout();
             if let Some(current) = self.lexer.next() {
                 self.current = current
             } else {
                 self.insert_final();
-                self.exhausted = true;
+                self.keep_going = false;
             }
+            self.queue.pop_back()
+        } else {
             self.queue.pop_back()
         }
     }
