@@ -255,6 +255,15 @@ Eq a |
 ";
     let engine = Engine::new(source);
     for token in engine {
-        dbg!(token);
+        if let TokenK::Layout(layout) = token.kind {
+            match layout {
+                LayoutK::Begin => print!("{{"),
+                LayoutK::End => print!("}}"),
+                LayoutK::Separator => print!(";"),
+            }
+        } else {
+            print!("{}", &source[token.begin..token.end]);
+        }
     }
+    println!();
 }
