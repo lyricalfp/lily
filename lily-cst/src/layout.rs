@@ -159,8 +159,8 @@ impl<'a> Engine<'a> {
         self.stack.truncate(take_n);
         for _ in 0..make_n {
             self.queue.push_front(Token {
-                begin: self.current.end,
-                end: self.current.end,
+                begin: current_position.offset,
+                end: current_position.offset,
                 kind: TokenK::Layout(LayoutK::End),
             });
         }
@@ -191,40 +191,13 @@ impl<'a> Engine<'a> {
 
         match self.current.kind {
             Operator(Bang | Pipe | Question) => {
-                if let Some((_, Root)) = self.stack.last() {
-                    self.queue.push_front(self.current);
-                    self.queue.push_front(Token {
-                        begin: self.current.end,
-                        end: self.current.end,
-                        kind: Layout(LayoutK::Begin),
-                    });
-                    let next_offset = self.lexer.peek().expect("non-eof").begin;
-                    let next_position = self.get_position(next_offset);
-                    self.stack.push((next_position, TopLevel));
-                }
+                self.insert_current();
+                self.insert_begin(TopLevel);
             }
             _ => {
-                self.queue.push_front(self.current);
-                if let Some(next_begin) = self.lexer.peek().map(|token| token.begin) {
-                    let next_position = self.get_position(next_begin);
-                    let (layout_position, layout_delimiter) =
-                        self.stack.last().expect("non-empty stack");
-                    if layout_delimiter.is_indented()
-                        && layout_position.column >= next_position.column
-                    {
-                        self.queue.push_front(Token {
-                            begin: self.current.end,
-                            end: self.current.end,
-                            kind: Layout(LayoutK::End),
-                        });
-                        self.queue.push_front(Token {
-                            begin: self.current.end,
-                            end: self.current.end,
-                            kind: Layout(LayoutK::Separator),
-                        });
-                        self.stack.pop();
-                    }
-                }
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
             }
         }
     }
