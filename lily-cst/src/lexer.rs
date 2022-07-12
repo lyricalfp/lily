@@ -247,7 +247,9 @@ impl<'a> Iterator for Lexer<'a> {
         } else {
             let mut token = self.cursor.take_token();
             loop {
-                if let TokenK::Whitespace = token.kind {
+                if self.cursor.is_eof() {
+                    break Some(token);
+                } else if let TokenK::Whitespace = token.kind {
                     token = self.cursor.take_token();
                 } else {
                     break Some(token);
