@@ -233,8 +233,9 @@ Equal a b !
 
 Eq a |
   eq : a -> a -> Boolean
-"
-    .trim();
+";
     let engine = Engine::new(source);
-    dbg!(engine.collect::<Vec<_>>());
+    for token in engine {
+        dbg!(token);
+    }
 }
