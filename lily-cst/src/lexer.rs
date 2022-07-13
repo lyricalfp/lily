@@ -23,19 +23,22 @@ mod tests {
 
     #[test]
     fn basic_layout_test() {
-        let source = r"
-module Main
+        let source = r"module Main
 
+Identity : Type -> Type
 Identity a ?
   _ : a -> Identity a
 
+Equal : Type -> Type -> Boolean
 Equal a b !
   _ : a -> a -> True
   _ : a -> b -> False
 
+Eq : Type -> Constraint
 Eq a |
   eq : a -> a -> Boolean
 ";
+        println!("{}", "=".repeat(40));
         for token in lex(source) {
             if let TokenK::Layout(layout) = token.kind {
                 match layout {
@@ -43,10 +46,12 @@ Eq a |
                     LayoutK::End => print!("}}"),
                     LayoutK::Separator => print!(";"),
                 }
+            } else if let TokenK::Eof = token.kind {
+                print!("<eof>");
             } else {
                 print!("{}", &source[token.begin..token.end]);
             }
         }
-        println!();
+        println!("\n{}", "=".repeat(40));
     }
 }

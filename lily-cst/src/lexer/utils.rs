@@ -19,16 +19,17 @@ pub fn join(
     let mut i = i.peekable();
     let mut j = j.peekable();
     iter::from_fn(move || match (i.peek(), j.peek()) {
-        (Some(x), Some(y)) => match x.begin.cmp(&y.begin) {
-            Ordering::Less => i.next(),
-            Ordering::Equal => i.next(),
-            Ordering::Greater => {
-                if let TokenK::Layout(_) = x.kind {
-                    i.next()
-                } else {
-                    j.next()
-                }
-            }
+        (Some(x), Some(y)) => match x.kind {
+            // layout tokens have priority over annotation tokens
+            TokenK::Layout(_) => i.next(),
+            // annotation tokens have priority over the eof token
+            TokenK::Eof => j.next(),
+            // on non-zero-width tokens, choose what comes first
+            _ => match x.begin.cmp(&y.begin) {
+                Ordering::Less => i.next(),
+                Ordering::Greater => j.next(),
+                Ordering::Equal => panic!("uncaught zero-width token {:?} {:?}", x, y),
+            },
         },
         (Some(_), None) => i.next(),
         (None, Some(_)) => j.next(),
