@@ -39,4 +39,8 @@ impl<'a> Lines<'a> {
             column,
         }
     }
+
+    pub fn eof_offset(&self) -> usize {
+        self.source.len()
+    }
 }

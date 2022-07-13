@@ -22,8 +22,6 @@ pub fn join(
         (Some(x), Some(y)) => match x.kind {
             // layout tokens have priority over annotation tokens
             TokenK::Layout(_) => i.next(),
-            // annotation tokens have priority over the eof token
-            TokenK::Eof => j.next(),
             // on non-zero-width tokens, choose what comes first
             _ => match x.begin.cmp(&y.begin) {
                 Ordering::Less => i.next(),

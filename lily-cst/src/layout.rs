@@ -136,6 +136,7 @@ where
     }
 
     fn insert_final(&mut self) {
+        let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::Root = delimiter {
                 self.token_queue.push_front(Token {
@@ -144,8 +145,8 @@ where
                     kind: TokenK::Layout(LayoutK::Separator),
                 });
                 self.token_queue.push_front(Token {
-                    begin: self.current.end,
-                    end: self.current.end,
+                    begin: eof_offset,
+                    end: eof_offset,
                     kind: TokenK::Eof,
                 });
             } else if delimiter.is_indented() {
