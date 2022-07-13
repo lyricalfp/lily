@@ -21,9 +21,7 @@ mod tests {
         lexer::lex,
     };
 
-    #[test]
-    fn basic_layout_test() {
-        let source = r"module Main
+    const SOURCE: &str = r"module Main
 
 Identity : Type -> Type
 Identity a ?
@@ -38,20 +36,51 @@ Eq : Type -> Constraint
 Eq a |
   eq : a -> a -> Boolean
 ";
-        println!("{}", "=".repeat(40));
-        for token in lex(source) {
+
+    #[test]
+    fn ascending_position() {
+        let tokens = lex(SOURCE).collect::<Vec<_>>();
+        for window in tokens.windows(2) {
+            assert!(window[0].begin <= window[1].begin);
+            assert!(window[0].end <= window[1].end);
+        }
+    }
+
+    #[test]
+    fn basic_layout_test() {
+        let mut actual = String::new();
+        let expected = r"module Main;
+
+Identity : Type -> Type;
+Identity a ?{
+  _ : a -> Identity a};
+
+Equal : Type -> Type -> Boolean;
+Equal a b !{
+  _ : a -> a -> True;
+  _ : a -> b -> False};
+
+Eq : Type -> Constraint;
+Eq a |{
+  eq : a -> a -> Boolean};
+<eof>
+";
+
+        for token in lex(SOURCE) {
             if let TokenK::Layout(layout) = token.kind {
                 match layout {
-                    LayoutK::Begin => print!("{{"),
-                    LayoutK::End => print!("}}"),
-                    LayoutK::Separator => print!(";"),
+                    LayoutK::Begin => actual.push('{'),
+                    LayoutK::End => actual.push('}'),
+                    LayoutK::Separator => actual.push(';'),
                 }
             } else if let TokenK::Eof = token.kind {
-                print!("<eof>");
+                actual.push_str("<eof>");
             } else {
-                print!("{}", &source[token.begin..token.end]);
+                actual.push_str(&SOURCE[token.begin..token.end]);
             }
         }
-        println!("\n{}", "=".repeat(40));
+        actual.push('\n');
+
+        assert_eq!(actual, expected);
     }
 }
