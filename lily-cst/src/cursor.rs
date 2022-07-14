@@ -39,6 +39,8 @@ pub enum OperatorK {
     Colon,
     Comma,
     Equal,
+    GreaterThan,
+    LessThan,
     Normal,
     Period,
     Pipe,
@@ -169,25 +171,8 @@ impl<'a> Cursor<'a> {
                 self.take_while(|c| c != '\n');
                 TokenK::Comment(CommentK::Line)
             }
-            // Compound Symbols
-            initial if initial.is_symbol() || initial.is_punctuation() => {
-                self.take_while(|c| !"(){}[]".contains(c) && (c.is_symbol() || c.is_punctuation()));
-                let end = self.consumed();
-                TokenK::Operator(match &self.source[begin..end] {
-                    "->" => OperatorK::ArrowRight,
-                    "<-" => OperatorK::ArrowLeft,
-                    "=" => OperatorK::Equal,
-                    ":" => OperatorK::Colon,
-                    "." => OperatorK::Period,
-                    "|" => OperatorK::Pipe,
-                    "?" => OperatorK::Question,
-                    "!" => OperatorK::Bang,
-                    "_" => OperatorK::Underscore,
-                    _ => OperatorK::Normal,
-                })
-            }
             // Identifiers
-            initial if initial.is_letter_lowercase() || initial == '_' => {
+            initial if initial.is_letter_lowercase() || initial == '_' && self.peek_1() == '_' => {
                 self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
                 let end = self.consumed();
                 TokenK::Identifier(match &self.source[begin..end] {
@@ -206,6 +191,25 @@ impl<'a> Cursor<'a> {
             initial if initial.is_letter_uppercase() => {
                 self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
                 TokenK::Identifier(IdentifierK::Upper)
+            }
+            // Compound Symbols
+            initial if initial.is_symbol() || initial.is_punctuation() => {
+                self.take_while(|c| !"(){}[]".contains(c) && (c.is_symbol() || c.is_punctuation()));
+                let end = self.consumed();
+                TokenK::Operator(match &self.source[begin..end] {
+                    "->" => OperatorK::ArrowRight,
+                    "<-" => OperatorK::ArrowLeft,
+                    "=" => OperatorK::Equal,
+                    ":" => OperatorK::Colon,
+                    "." => OperatorK::Period,
+                    "|" => OperatorK::Pipe,
+                    "?" => OperatorK::Question,
+                    "!" => OperatorK::Bang,
+                    "_" => OperatorK::Underscore,
+                    "<" => OperatorK::LessThan,
+                    ">" => OperatorK::GreaterThan,
+                    _ => OperatorK::Normal,
+                })
             }
             // Digits
             initial if initial.is_ascii_digit() => {
@@ -255,7 +259,7 @@ impl<'a> Iterator for Cursor<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommentK, Cursor, DigitK, OperatorK, Token, TokenK};
+    use super::{CommentK, Cursor, DigitK, IdentifierK, OperatorK, Token, TokenK};
 
     #[test]
     fn double_period_after_int() {
@@ -303,5 +307,19 @@ mod tests {
             },
         ];
         assert_eq!(cursor.collect::<Vec<_>>(), expected);
+    }
+
+    #[test]
+    fn underscore_disambiguation() {
+        let source = "__";
+        let mut cursor = Cursor::new(source);
+        assert_eq!(
+            cursor.next(),
+            Some(Token {
+                begin: 0,
+                end: 2,
+                kind: TokenK::Identifier(IdentifierK::Lower),
+            })
+        )
     }
 }
