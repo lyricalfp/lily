@@ -8,16 +8,18 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DelimiterK {
     CaseKw,
+    LamMask,
     OfKw,
     PatMask,
     Root,
     TopLevel,
+    DoKw,
 }
 
 impl DelimiterK {
     fn is_indented(&self) -> bool {
         use DelimiterK::*;
-        matches!(&self, OfKw | Root | TopLevel)
+        matches!(&self, DoKw | OfKw | Root | TopLevel)
     }
 }
 
@@ -174,6 +176,29 @@ where
         use OperatorK::*;
         use TokenK::*;
 
+        macro_rules! collapse {
+            ($predicate:expr, $($commit:literal ~ $pattern:pat $(if $guard:expr)? => $expression:expr,)+) => {
+                {
+                    let (take_n, make_n) = self.determine_end($predicate);
+                    match &self.delimiters[..take_n] {
+                        $($pattern $(if $guard)? => {
+                            if $commit {
+                                self.delimiters.truncate(take_n);
+                                for _ in 0..make_n {
+                                    self.token_queue.push_front(Token {
+                                        begin: self.current.begin,
+                                        end: self.current.begin,
+                                        kind: TokenK::Layout(LayoutK::End),
+                                    });
+                                }
+                            };
+                            $expression
+                        }),+
+                    }
+                }
+            };
+        }
+
         match self.current.kind {
             Operator(Bang | Pipe | Question) => {
                 self.insert_current();
@@ -186,23 +211,52 @@ where
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), CaseKw));
             }
-            Identifier(Of) => {
-                if let Some((_, CaseKw)) = self.delimiters.last() {
+            Identifier(Of) => collapse!(
+                |_, delimiter| delimiter.is_indented(),
+                true ~ [.., (_, CaseKw)] => {
                     self.delimiters.pop();
                     self.insert_current();
                     self.insert_begin(OfKw);
                     let next = self.tokens.peek().expect("non-eof");
                     self.delimiters
                         .push((self.lines.get_position(next.begin), PatMask));
-                }
+                },
+                true ~ _ => {
+                    self.insert_end();
+                    self.insert_separator();
+                    self.insert_current();
+                },
+            ),
+            Operator(Backslash) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.delimiters
+                    .push((self.lines.get_position(self.current.begin), LamMask));
             }
-            Operator(ArrowRight) => {
-                if let Some((_, PatMask)) = self.delimiters.last() {
-                    self.delimiters.pop();
+            Operator(ArrowRight) => collapse!(
+                |position, delimiter| {
+                    match delimiter {
+                        DoKw => true,
+                        OfKw => false,
+                        _ => {
+                            let current_position = self.lines.get_position(self.current.begin);
+                            delimiter.is_indented() && current_position.column <= position.column
+                        },
+                    }
+                },
+                true ~ _ => {
                     self.insert_current();
-                } else {
-                    self.insert_current();
-                }
+                    if let Some((_, LamMask | PatMask)) = self.delimiters.last() {
+                        self.delimiters.pop();
+                    }
+                },
+            ),
+            Identifier(Do) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.insert_begin(DoKw);
             }
             _ => {
                 self.insert_end();

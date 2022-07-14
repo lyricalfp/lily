@@ -40,6 +40,37 @@ head : List a -> Maybe a
 head xs = case xs of
   Cons x _ -> Just x
   Nil      -> Nothing
+
+main : Effect Unit
+main = do
+  log message
+  log message
+  attempt do
+    log message
+    log message
+
+ofCollapse : Int
+ofCollapse =
+  case
+    do _ <- pure 0
+       pure 1
+  of
+    Just x -> x
+    Nothing -> 0
+
+lambdaMask : List a -> Maybe a
+lambdaMask xs = case xs of
+  Cons x _ if (\_ -> true) x ->
+    Just x
+  _ ->
+    Nothing
+
+arrowFinishDo : List a -> Maybe a
+arrowFinishDo xs = case xs of
+  Cons x _ if do true ->
+    Just x
+  _ ->
+    Nothing
 ";
 
     #[test]
@@ -73,6 +104,37 @@ head : List a -> Maybe a;
 head xs = case xs of{
   Cons x _ -> Just x;
   Nil      -> Nothing};
+
+main : Effect Unit;
+main = do{
+  log message;
+  log message;
+  attempt do{
+    log message;
+    log message}};
+
+ofCollapse : Int;
+ofCollapse =
+  case
+    do{ _ <- pure 0;
+       pure 1}
+  of{
+    Just x -> x;
+    Nothing -> 0};
+
+lambdaMask : List a -> Maybe a;
+lambdaMask xs = case xs of{
+  Cons x _ if (\_ -> true) x ->
+    Just x;
+  _ ->
+    Nothing};
+
+arrowFinishDo : List a -> Maybe a;
+arrowFinishDo xs = case xs of{
+  Cons x _ if do{ true} ->
+    Just x;
+  _ ->
+    Nothing};
 <eof>
 ";
 
@@ -90,7 +152,7 @@ head xs = case xs of{
             }
         }
         actual.push('\n');
-
+        print!("{}", actual);
         assert_eq!(actual, expected);
     }
 }
