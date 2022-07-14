@@ -117,26 +117,23 @@ where
 
     fn insert_separator(&mut self) {
         let current_position = self.lines.get_position(self.current.begin);
-        match self.delimiters.last() {
-            Some((position, delimiter)) => {
-                if delimiter.is_indented()
-                    && current_position.column == position.column
-                    && current_position.line > position.line
-                {
-                    self.token_queue.push_front(Token {
-                        begin: self.current.end,
-                        end: self.current.end,
-                        kind: TokenK::Layout(LayoutK::Separator),
-                    });
-                    if let DelimiterK::KwOf = delimiter {
-                        self.delimiters.push((
-                            self.lines.get_position(self.current.begin),
-                            DelimiterK::MaskPat,
-                        ));
-                    }
+        if let Some((position, delimiter)) = self.delimiters.last() {
+            if delimiter.is_indented()
+                && current_position.column == position.column
+                && current_position.line > position.line
+            {
+                self.token_queue.push_front(Token {
+                    begin: self.current.end,
+                    end: self.current.end,
+                    kind: TokenK::Layout(LayoutK::Separator),
+                });
+                if let DelimiterK::KwOf = delimiter {
+                    self.delimiters.push((
+                        self.lines.get_position(self.current.begin),
+                        DelimiterK::MaskPat,
+                    ));
                 }
             }
-            _ => {}
         }
     }
 
