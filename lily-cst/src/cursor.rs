@@ -10,14 +10,16 @@ pub enum CommentK {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentifierK {
+    Ado,
     Case,
     Do,
-    Let,
-    Of,
-    If,
-    Then,
     Else,
+    If,
+    In,
+    Let,
     Lower,
+    Of,
+    Then,
     Upper,
 }
 
@@ -189,13 +191,15 @@ impl<'a> Cursor<'a> {
                 self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
                 let end = self.consumed();
                 TokenK::Identifier(match &self.source[begin..end] {
-                    "let" => IdentifierK::Let,
-                    "do" => IdentifierK::Do,
+                    "ado" => IdentifierK::Ado,
                     "case" => IdentifierK::Case,
-                    "of" => IdentifierK::Of,
-                    "if" => IdentifierK::If,
-                    "then" => IdentifierK::Then,
+                    "do" => IdentifierK::Do,
                     "else" => IdentifierK::Else,
+                    "if" => IdentifierK::If,
+                    "in" => IdentifierK::In,
+                    "let" => IdentifierK::Let,
+                    "of" => IdentifierK::Of,
+                    "then" => IdentifierK::Then,
                     _ => IdentifierK::Lower,
                 })
             }

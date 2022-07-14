@@ -7,22 +7,28 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DelimiterK {
-    CaseKw,
-    LamMask,
-    OfKw,
-    PatMask,
-    Root,
-    TopLevel,
-    DoKw,
-    IfKw,
-    ThenKw,
-    ElseMask,
+    KwAdo,
+    KwCase,
+    KwDo,
+    KwIf,
+    KwLetExpr,
+    KwLetStmt,
+    KwOf,
+    KwThen,
+    MaskElse,
+    MaskLam,
+    MaskPat,
+    MaskRoot,
+    MaskTop,
 }
 
 impl DelimiterK {
     fn is_indented(&self) -> bool {
         use DelimiterK::*;
-        matches!(&self, DoKw | OfKw | Root | TopLevel)
+        matches!(
+            &self,
+            KwAdo | KwDo | KwLetExpr | KwLetStmt | KwOf | MaskRoot | MaskTop
+        )
     }
 }
 
@@ -43,7 +49,7 @@ where
         let mut tokens = tokens.peekable();
         let start = lines.get_position(tokens.peek().expect("non-empty tokens").begin);
         let current = tokens.next().expect("non-empty tokens");
-        let delimiters = vec![(start, DelimiterK::Root)];
+        let delimiters = vec![(start, DelimiterK::MaskRoot)];
         let token_queue = VecDeque::default();
         let should_keep_going = true;
         Self {
@@ -122,10 +128,10 @@ where
                         end: self.current.end,
                         kind: TokenK::Layout(LayoutK::Separator),
                     });
-                    if let DelimiterK::OfKw = delimiter {
+                    if let DelimiterK::KwOf = delimiter {
                         self.delimiters.push((
                             self.lines.get_position(self.current.begin),
-                            DelimiterK::PatMask,
+                            DelimiterK::MaskPat,
                         ));
                     }
                 }
@@ -152,7 +158,7 @@ where
     fn insert_final(&mut self) {
         let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
-            if let DelimiterK::Root = delimiter {
+            if let DelimiterK::MaskRoot = delimiter {
                 self.token_queue.push_front(Token {
                     begin: self.current.end,
                     end: self.current.end,
@@ -179,7 +185,7 @@ where
         use OperatorK::*;
         use TokenK::*;
 
-        macro_rules! collapse {
+        macro_rules! end {
             ($predicate:expr, $($commit:literal ~ $pattern:pat $(if $guard:expr)? => $expression:expr,)+) => {
                 {
                     let (take_n, make_n) = self.determine_end($predicate);
@@ -205,24 +211,24 @@ where
         match self.current.kind {
             Operator(Bang | Pipe | Question) => {
                 self.insert_current();
-                self.insert_begin(TopLevel);
+                self.insert_begin(MaskTop);
             }
             Identifier(Case) => {
                 self.insert_end();
                 self.insert_separator();
                 self.insert_current();
                 self.delimiters
-                    .push((self.lines.get_position(self.current.begin), CaseKw));
+                    .push((self.lines.get_position(self.current.begin), KwCase));
             }
-            Identifier(Of) => collapse!(
+            Identifier(Of) => end!(
                 |_, delimiter| delimiter.is_indented(),
-                true ~ [.., (_, CaseKw)] => {
+                true ~ [.., (_, KwCase)] => {
                     self.delimiters.pop();
                     self.insert_current();
-                    self.insert_begin(OfKw);
+                    self.insert_begin(KwOf);
                     let next = self.tokens.peek().expect("non-eof");
                     self.delimiters
-                        .push((self.lines.get_position(next.begin), PatMask));
+                        .push((self.lines.get_position(next.begin), MaskPat));
                 },
                 true ~ _ => {
                     self.insert_end();
@@ -235,13 +241,13 @@ where
                 self.insert_separator();
                 self.insert_current();
                 self.delimiters
-                    .push((self.lines.get_position(self.current.begin), LamMask));
+                    .push((self.lines.get_position(self.current.begin), MaskLam));
             }
-            Operator(ArrowRight) => collapse!(
+            Operator(ArrowRight) => end!(
                 |position, delimiter| {
                     match delimiter {
-                        DoKw => true,
-                        OfKw => false,
+                        KwDo => true,
+                        KwOf => false,
                         _ => {
                             let current_position = self.lines.get_position(self.current.begin);
                             delimiter.is_indented() && current_position.column <= position.column
@@ -250,34 +256,40 @@ where
                 },
                 true ~ _ => {
                     self.insert_current();
-                    if let Some((_, IfKw)) = self.delimiters.last() {
+                    if let Some((_, KwIf)) = self.delimiters.last() {
                         self.delimiters.pop();
                     }
-                    if let Some((_, LamMask | PatMask)) = self.delimiters.last() {
+                    if let Some((_, MaskLam | MaskPat)) = self.delimiters.last() {
                         self.delimiters.pop();
                     }
                 },
             ),
+            Identifier(Ado) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.insert_begin(KwAdo);
+            }
             Identifier(Do) => {
                 self.insert_end();
                 self.insert_separator();
                 self.insert_current();
-                self.insert_begin(DoKw);
+                self.insert_begin(KwDo);
             }
             Identifier(If) => {
                 self.insert_end();
                 self.insert_separator();
                 self.insert_current();
                 self.delimiters
-                    .push((self.lines.get_position(self.current.begin), IfKw));
+                    .push((self.lines.get_position(self.current.begin), KwIf));
             }
-            Identifier(Then) => collapse!(
+            Identifier(Then) => end!(
                 |_, delimiter| delimiter.is_indented(),
-                true ~ [.., (_, IfKw)] => {
+                true ~ [.., (_, KwIf)] => {
                     self.delimiters.pop();
                     self.insert_current();
                     self.delimiters
-                        .push((self.lines.get_position(self.current.begin), ThenKw));
+                        .push((self.lines.get_position(self.current.begin), KwThen));
                 },
                 false ~ _ => {
                     self.insert_end();
@@ -285,10 +297,41 @@ where
                     self.insert_current();
                 },
             ),
-            Identifier(Else) => collapse!(
+            Identifier(Else) => end!(
                 |_, delimiter| delimiter.is_indented(),
-                true ~ [.., (_, ThenKw)] => {
+                true ~ [.., (_, KwThen)] => {
                     self.delimiters.pop();
+                    self.insert_current();
+                },
+                false ~ _ => {
+                    self.insert_end();
+                    self.insert_separator();
+                    self.insert_current();
+                },
+            ),
+            Identifier(Let) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.insert_begin(match self.delimiters.last() {
+                    Some((_, KwAdo | KwDo)) => KwLetStmt,
+                    _ => KwLetExpr,
+                });
+            }
+            Identifier(In) => end!(
+                |_, delimiter| {
+                    match delimiter {
+                        KwAdo | KwLetExpr => false,
+                        _ => delimiter.is_indented(),
+                    }
+                },
+                true ~ [.., (_, KwAdo | KwLetExpr)] => {
+                    self.delimiters.pop();
+                    self.token_queue.push_front(Token {
+                        begin: self.current.begin,
+                        end: self.current.begin,
+                        kind: Layout(LayoutK::End),
+                    });
                     self.insert_current();
                 },
                 false ~ _ => {

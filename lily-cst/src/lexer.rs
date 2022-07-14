@@ -80,6 +80,40 @@ conditionalDo = do
     log something
   else do
     log something
+
+letIn : Int
+letIn =
+  let
+    x : Int
+    x = 1
+
+    y : Int
+    y = 1
+  in
+    x + y
+
+adoIn : Int
+adoIn = ado
+  x <- pure 1
+  y <- pure 1
+  let
+    a : Int
+    a = let b = c in d
+
+    e : Int
+    e = let f = g in h
+  in x + y
+
+adoLet : Effect Unit
+adoLet = do
+  logShow $ x + y
+  let
+    x : Int
+    x = 1
+
+    y : Int
+    y = 1
+  logShow $ x + y
 ";
 
     #[test]
@@ -152,6 +186,40 @@ conditionalDo = do{
     log something}
   else do{
     log something}};
+
+letIn : Int;
+letIn =
+  let{
+    x : Int;
+    x = 1;
+
+    y : Int;
+    y = 1}
+  in
+    x + y;
+
+adoIn : Int;
+adoIn = ado{
+  x <- pure 1;
+  y <- pure 1;
+  let{
+    a : Int;
+    a = let{ b = c} in d;
+
+    e : Int;
+    e = let{ f = g} in h}}
+  in x + y;
+
+adoLet : Effect Unit;
+adoLet = do{
+  logShow $ x + y;
+  let{
+    x : Int;
+    x = 1;
+
+    y : Int;
+    y = 1};
+  logShow $ x + y};
 <eof>
 ";
 
