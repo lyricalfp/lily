@@ -1,24 +1,28 @@
-mod utils;
+pub mod cursor;
+pub mod layout;
+pub mod partition;
 
 use crate::{
-    cursor::{Cursor, Token},
-    layout::Layout,
+    lexer::{
+        cursor::{Cursor, Token},
+        layout::Layout,
+    },
     lines::Lines,
 };
 
 pub fn lex(source: &str) -> impl Iterator<Item = Token> + '_ {
     let cursor = Cursor::new(source);
     let lines = Lines::new(source);
-    let (tokens, annotations) = utils::split(cursor);
+    let (tokens, annotations) = partition::split(cursor);
     let with_layout = Layout::new(lines, tokens);
-    utils::join(with_layout, annotations)
+    partition::join(with_layout, annotations)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
+    use crate::lexer::{
         cursor::{LayoutK, TokenK},
-        lexer::lex,
+        lex,
     };
     use pretty_assertions::assert_eq;
 

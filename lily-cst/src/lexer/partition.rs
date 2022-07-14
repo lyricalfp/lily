@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, iter};
 
-use crate::cursor::{Token, TokenK};
+use crate::lexer::cursor::{Token, TokenK};
 
 pub fn split(
     i: impl Iterator<Item = Token> + Clone,

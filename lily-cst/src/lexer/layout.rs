@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, iter::Peekable};
 
 use crate::{
-    cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
+    lexer::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
     lines::{Lines, Position},
 };
 
