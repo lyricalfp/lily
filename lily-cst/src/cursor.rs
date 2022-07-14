@@ -14,6 +14,9 @@ pub enum IdentifierK {
     Do,
     Let,
     Of,
+    If,
+    Then,
+    Else,
     Lower,
     Upper,
 }
@@ -190,6 +193,9 @@ impl<'a> Cursor<'a> {
                     "do" => IdentifierK::Do,
                     "case" => IdentifierK::Case,
                     "of" => IdentifierK::Of,
+                    "if" => IdentifierK::If,
+                    "then" => IdentifierK::Then,
+                    "else" => IdentifierK::Else,
                     _ => IdentifierK::Lower,
                 })
             }

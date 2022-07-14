@@ -14,6 +14,9 @@ pub enum DelimiterK {
     Root,
     TopLevel,
     DoKw,
+    IfKw,
+    ThenKw,
+    ElseMask,
 }
 
 impl DelimiterK {
@@ -247,6 +250,9 @@ where
                 },
                 true ~ _ => {
                     self.insert_current();
+                    if let Some((_, IfKw)) = self.delimiters.last() {
+                        self.delimiters.pop();
+                    }
                     if let Some((_, LamMask | PatMask)) = self.delimiters.last() {
                         self.delimiters.pop();
                     }
@@ -258,6 +264,39 @@ where
                 self.insert_current();
                 self.insert_begin(DoKw);
             }
+            Identifier(If) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.delimiters
+                    .push((self.lines.get_position(self.current.begin), IfKw));
+            }
+            Identifier(Then) => collapse!(
+                |_, delimiter| delimiter.is_indented(),
+                true ~ [.., (_, IfKw)] => {
+                    self.delimiters.pop();
+                    self.insert_current();
+                    self.delimiters
+                        .push((self.lines.get_position(self.current.begin), ThenKw));
+                },
+                false ~ _ => {
+                    self.insert_end();
+                    self.insert_separator();
+                    self.insert_current();
+                },
+            ),
+            Identifier(Else) => collapse!(
+                |_, delimiter| delimiter.is_indented(),
+                true ~ [.., (_, ThenKw)] => {
+                    self.delimiters.pop();
+                    self.insert_current();
+                },
+                false ~ _ => {
+                    self.insert_end();
+                    self.insert_separator();
+                    self.insert_current();
+                },
+            ),
             _ => {
                 self.insert_end();
                 self.insert_separator();

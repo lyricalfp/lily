@@ -72,6 +72,14 @@ arrowFinishDo xs = case xs of
     Just x
   _ ->
     Nothing
+
+conditionalDo : Effect Unit
+conditionalDo = do
+  log something
+  if do true then do
+    log something
+  else do
+    log something
 ";
 
     #[test]
@@ -136,6 +144,14 @@ arrowFinishDo xs = case xs of{
     Just x;
   _ ->
     Nothing};
+
+conditionalDo : Effect Unit;
+conditionalDo = do{
+  log something;
+  if do{ true} then do{
+    log something}
+  else do{
+    log something}};
 <eof>
 ";
 
