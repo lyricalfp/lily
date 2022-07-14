@@ -20,6 +20,7 @@ mod tests {
         cursor::{LayoutK, TokenK},
         lexer::lex,
     };
+    use pretty_assertions::assert_eq;
 
     const SOURCE: &str = r"module Main
 

@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 peekmore = "1.0.0"
 unicode_categories = "0.1.1"
+
+[dev-dependencies]
+pretty_assertions = "1.2.1"
