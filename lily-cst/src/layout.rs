@@ -1,12 +1,15 @@
 use std::{collections::VecDeque, iter::Peekable};
 
 use crate::{
-    cursor::{LayoutK, OperatorK, Token, TokenK},
+    cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
     lines::{Lines, Position},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DelimiterK {
+    CaseKw,
+    OfKw,
+    PatMask,
     Root,
     TopLevel,
 }
@@ -14,7 +17,7 @@ pub enum DelimiterK {
 impl DelimiterK {
     fn is_indented(&self) -> bool {
         use DelimiterK::*;
-        matches!(&self, Root | TopLevel)
+        matches!(&self, OfKw | Root | TopLevel)
     }
 }
 
@@ -114,6 +117,12 @@ where
                         end: self.current.end,
                         kind: TokenK::Layout(LayoutK::Separator),
                     });
+                    if let DelimiterK::OfKw = delimiter {
+                        self.delimiters.push((
+                            self.lines.get_position(self.current.begin),
+                            DelimiterK::PatMask,
+                        ));
+                    }
                 }
             }
             _ => {}
@@ -161,6 +170,7 @@ where
 
     fn insert_layout(&mut self) {
         use DelimiterK::*;
+        use IdentifierK::*;
         use OperatorK::*;
         use TokenK::*;
 
@@ -168,6 +178,31 @@ where
             Operator(Bang | Pipe | Question) => {
                 self.insert_current();
                 self.insert_begin(TopLevel);
+            }
+            Identifier(Case) => {
+                self.insert_end();
+                self.insert_separator();
+                self.insert_current();
+                self.delimiters
+                    .push((self.lines.get_position(self.current.begin), CaseKw));
+            }
+            Identifier(Of) => {
+                if let Some((_, CaseKw)) = self.delimiters.last() {
+                    self.delimiters.pop();
+                    self.insert_current();
+                    self.insert_begin(OfKw);
+                    let next = self.tokens.peek().expect("non-eof");
+                    self.delimiters
+                        .push((self.lines.get_position(next.begin), PatMask));
+                }
+            }
+            Operator(ArrowRight) => {
+                if let Some((_, PatMask)) = self.delimiters.last() {
+                    self.delimiters.pop();
+                    self.insert_current();
+                } else {
+                    self.insert_current();
+                }
             }
             _ => {
                 self.insert_end();

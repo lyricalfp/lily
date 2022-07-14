@@ -35,6 +35,11 @@ Equal a b !
 Eq : Type -> Constraint
 Eq a |
   eq : a -> a -> Boolean
+
+head : List a -> Maybe a
+head xs = case xs of
+  Cons x _ -> Just x
+  Nil      -> Nothing
 ";
 
     #[test]
@@ -63,6 +68,11 @@ Equal a b !{
 Eq : Type -> Constraint;
 Eq a |{
   eq : a -> a -> Boolean};
+
+head : List a -> Maybe a;
+head xs = case xs of{
+  Cons x _ -> Just x;
+  Nil      -> Nothing};
 <eof>
 ";
 

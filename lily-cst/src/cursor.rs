@@ -10,8 +10,10 @@ pub enum CommentK {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentifierK {
+    Case,
     Do,
     Let,
+    Of,
     Lower,
     Upper,
 }
@@ -186,6 +188,8 @@ impl<'a> Cursor<'a> {
                 TokenK::Identifier(match &self.source[begin..end] {
                     "let" => IdentifierK::Let,
                     "do" => IdentifierK::Do,
+                    "case" => IdentifierK::Case,
+                    "of" => IdentifierK::Of,
                     _ => IdentifierK::Lower,
                 })
             }
