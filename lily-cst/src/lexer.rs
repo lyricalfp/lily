@@ -21,9 +21,9 @@ pub fn lex_non_empty(source: &str) -> impl Iterator<Item = Token> + '_ {
     assert!(!source.is_empty());
     let cursor = Cursor::new(source);
     let lines = Lines::new(source);
-    let (tokens, annotations) = partition::split(cursor);
-    let with_layout = Layout::new(lines, tokens);
-    partition::join(lines, with_layout, annotations)
+    let (tokens, significant, annotations) = partition::split(cursor);
+    let with_layout = Layout::new(lines, significant);
+    partition::join(lines, tokens, with_layout, annotations)
 }
 
 #[cfg(test)]
@@ -251,5 +251,23 @@ adoLet = do{
         actual.push('\n');
         print!("{}", actual);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn it_works() {
+        for token in lex_non_empty(SOURCE) {
+            if let TokenK::Layout(layout) = token.kind {
+                match layout {
+                    LayoutK::Begin => print!("{{"),
+                    LayoutK::End => print!("}}"),
+                    LayoutK::Separator => print!(";"),
+                }
+            } else if let TokenK::Eof = token.kind {
+                print!("<eof>");
+            } else {
+                print!("{}", &SOURCE[token.begin..token.end]);
+            }
+        }
+        print!("\n");
     }
 }

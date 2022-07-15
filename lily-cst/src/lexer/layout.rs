@@ -90,7 +90,7 @@ where
     }
 
     fn insert_current(&mut self) {
-        self.token_queue.push_front(self.current);
+        // self.token_queue.push_front(self.current);
     }
 
     fn insert_begin(&mut self, delimiter: DelimiterK) {
@@ -124,8 +124,8 @@ where
                 && current_position.line > position.line
             {
                 self.token_queue.push_front(Token {
-                    begin: self.current.end,
-                    end: self.current.end,
+                    begin: self.current.begin,
+                    end: self.current.begin,
                     kind: TokenK::Layout(LayoutK::Separator),
                 });
                 if let DelimiterK::KwOf = delimiter {
@@ -154,17 +154,18 @@ where
     }
 
     fn insert_final(&mut self) {
+        let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
                 self.token_queue.push_front(Token {
-                    begin: self.current.end,
-                    end: self.current.end,
+                    begin: eof_offset,
+                    end: eof_offset,
                     kind: TokenK::Layout(LayoutK::Separator),
                 });
             } else if delimiter.is_indented() {
                 self.token_queue.push_front(Token {
-                    begin: self.current.end,
-                    end: self.current.end,
+                    begin: eof_offset,
+                    end: eof_offset,
                     kind: TokenK::Layout(LayoutK::End),
                 });
             }
@@ -349,14 +350,19 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.should_keep_going {
-            self.insert_layout();
-            if let Some(current) = self.tokens.next() {
-                self.current = current
-            } else {
-                self.insert_final();
-                self.should_keep_going = false;
+            loop {
+                self.insert_layout();
+                if let Some(current) = self.tokens.next() {
+                    self.current = current
+                } else {
+                    self.insert_final();
+                    self.should_keep_going = false;
+                }
+                let token = self.token_queue.pop_back();
+                if token.is_some() {
+                    break token;
+                }
             }
-            self.token_queue.pop_back()
         } else {
             self.token_queue.pop_back()
         }
