@@ -252,22 +252,4 @@ adoLet = do{
         print!("{}", actual);
         assert_eq!(actual, expected);
     }
-
-    #[test]
-    fn it_works() {
-        for token in lex_non_empty(SOURCE) {
-            if let TokenK::Layout(layout) = token.kind {
-                match layout {
-                    LayoutK::Begin => print!("{{"),
-                    LayoutK::End => print!("}}"),
-                    LayoutK::Separator => print!(";"),
-                }
-            } else if let TokenK::Eof = token.kind {
-                print!("<eof>");
-            } else {
-                print!("{}", &SOURCE[token.begin..token.end]);
-            }
-        }
-        println!();
-    }
 }
