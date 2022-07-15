@@ -1,40 +1,10 @@
-pub mod cursor;
-pub mod layout;
-pub mod partition;
-
-use self::{
-    cursor::{Cursor, Token},
-    layout::Layout,
+use crate::lexer::{
+    cursor::{LayoutK, TokenK},
+    lex_non_empty,
 };
+use pretty_assertions::assert_eq;
 
-use crate::{error::CstErr, lines::Lines};
-
-pub fn lex(source: &str) -> Result<impl Iterator<Item = Token> + '_, CstErr> {
-    if source.is_empty() {
-        Err(CstErr::EmptySourceFile)
-    } else {
-        Ok(lex_non_empty(source))
-    }
-}
-
-pub fn lex_non_empty(source: &str) -> impl Iterator<Item = Token> + '_ {
-    assert!(!source.is_empty());
-    let cursor = Cursor::new(source);
-    let lines = Lines::new(source);
-    let (tokens, significant, annotations) = partition::split(cursor);
-    let with_layout = Layout::new(lines, significant).iter();
-    partition::join(lines, tokens, with_layout, annotations)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::lexer::{
-        cursor::{LayoutK, TokenK},
-        lex_non_empty,
-    };
-    use pretty_assertions::assert_eq;
-
-    const SOURCE: &str = r"module Main
+const SOURCE: &str = r"module Main
 
 Identity : Type -> Type
 Identity a ?
@@ -128,19 +98,19 @@ adoLet = do
   logShow $ x + y
 ";
 
-    #[test]
-    fn ascending_position() {
-        let tokens = lex_non_empty(SOURCE).collect::<Vec<_>>();
-        for window in tokens.windows(2) {
-            assert!(window[0].begin <= window[1].begin);
-            assert!(window[0].end <= window[1].end);
-        }
+#[test]
+fn ascending_position() {
+    let tokens = lex_non_empty(SOURCE).collect::<Vec<_>>();
+    for window in tokens.windows(2) {
+        assert!(window[0].begin <= window[1].begin);
+        assert!(window[0].end <= window[1].end);
     }
+}
 
-    #[test]
-    fn basic_layout_test() {
-        let mut actual = String::new();
-        let expected = r"module Main;
+#[test]
+fn basic_layout_test() {
+    let mut actual = String::new();
+    let expected = r"module Main;
 
 Identity : Type -> Type;
 Identity a ?{
@@ -235,39 +205,20 @@ adoLet = do{
 <eof>
 ";
 
-        for token in lex_non_empty(SOURCE) {
-            if let TokenK::Layout(layout) = token.kind {
-                match layout {
-                    LayoutK::Begin => actual.push('{'),
-                    LayoutK::End => actual.push('}'),
-                    LayoutK::Separator => actual.push(';'),
-                }
-            } else if let TokenK::Eof = token.kind {
-                actual.push_str("<eof>");
-            } else {
-                actual.push_str(&SOURCE[token.begin..token.end]);
+    for token in lex_non_empty(SOURCE) {
+        if let TokenK::Layout(layout) = token.kind {
+            match layout {
+                LayoutK::Begin => actual.push('{'),
+                LayoutK::End => actual.push('}'),
+                LayoutK::Separator => actual.push(';'),
             }
+        } else if let TokenK::Eof = token.kind {
+            actual.push_str("<eof>");
+        } else {
+            actual.push_str(&SOURCE[token.begin..token.end]);
         }
-        actual.push('\n');
-        print!("{}", actual);
-        assert_eq!(actual, expected);
     }
-
-    #[test]
-    fn it_works() {
-        for token in lex_non_empty(SOURCE) {
-            if let TokenK::Layout(layout) = token.kind {
-                match layout {
-                    LayoutK::Begin => print!("{{"),
-                    LayoutK::End => print!("}}"),
-                    LayoutK::Separator => print!(";"),
-                }
-            } else if let TokenK::Eof = token.kind {
-                print!("<eof>");
-            } else {
-                print!("{}", &SOURCE[token.begin..token.end]);
-            }
-        }
-        println!();
-    }
+    actual.push('\n');
+    print!("{}", actual);
+    assert_eq!(actual, expected);
 }

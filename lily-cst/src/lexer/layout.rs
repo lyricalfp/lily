@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, iter::Peekable};
+use std::iter::Peekable;
 
 use super::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
@@ -39,8 +39,7 @@ where
     tokens: Peekable<I>,
     current: Token,
     delimiters: Vec<(Position, DelimiterK)>,
-    token_queue: VecDeque<Token>,
-    should_keep_going: bool,
+    layouts: Vec<Token>,
 }
 
 impl<'a, I> Layout<'a, I>
@@ -51,16 +50,27 @@ where
         let mut tokens = tokens.peekable();
         let current = tokens.next().expect("tokens must be non-empty");
         let delimiters = vec![(lines.get_position(current.begin), DelimiterK::MaskRoot)];
-        let token_queue = VecDeque::default();
-        let should_keep_going = true;
+        let layouts = vec![];
         Self {
             lines,
             tokens,
             current,
             delimiters,
-            token_queue,
-            should_keep_going,
+            layouts,
         }
+    }
+
+    pub fn iter(mut self) -> impl Iterator<Item = Token> {
+        loop {
+            self.insert_layout();
+            if let Some(current) = self.tokens.next() {
+                self.current = current;
+            } else {
+                self.insert_final();
+                break;
+            }
+        }
+        self.layouts.into_iter()
     }
 }
 
@@ -105,7 +115,7 @@ where
         }
 
         self.delimiters.push((next_position, delimiter));
-        self.token_queue.push_front(Token {
+        self.layouts.push(Token {
             begin: self.current.end,
             end: self.current.end,
             kind: TokenK::Layout(LayoutK::Begin),
@@ -119,7 +129,7 @@ where
                 && current_position.column == position.column
                 && current_position.line > position.line
             {
-                self.token_queue.push_front(Token {
+                self.layouts.push(Token {
                     begin: self.current.begin,
                     end: self.current.begin,
                     kind: TokenK::Layout(LayoutK::Separator),
@@ -141,7 +151,7 @@ where
         });
         self.delimiters.truncate(take_n);
         for _ in 0..make_n {
-            self.token_queue.push_front(Token {
+            self.layouts.push(Token {
                 begin: current_position.offset,
                 end: current_position.offset,
                 kind: TokenK::Layout(LayoutK::End),
@@ -153,13 +163,13 @@ where
         let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
-                self.token_queue.push_front(Token {
+                self.layouts.push(Token {
                     begin: eof_offset,
                     end: eof_offset,
                     kind: TokenK::Layout(LayoutK::Separator),
                 });
             } else if delimiter.is_indented() {
-                self.token_queue.push_front(Token {
+                self.layouts.push(Token {
                     begin: eof_offset,
                     end: eof_offset,
                     kind: TokenK::Layout(LayoutK::End),
@@ -183,7 +193,7 @@ where
                             if $commit {
                                 self.delimiters.truncate(take_n);
                                 for _ in 0..make_n {
-                                    self.token_queue.push_front(Token {
+                                    self.layouts.push(Token {
                                         begin: self.current.begin,
                                         end: self.current.begin,
                                         kind: TokenK::Layout(LayoutK::End),
@@ -315,7 +325,7 @@ where
                 },
                 true ~ [.., (_, KwAdo | KwLetExpr)] => {
                     self.delimiters.pop();
-                    self.token_queue.push_front(Token {
+                    self.layouts.push(Token {
                         begin: self.current.begin,
                         end: self.current.begin,
                         kind: Layout(LayoutK::End),
@@ -332,32 +342,6 @@ where
                 self.insert_end();
                 self.insert_separator();
             }
-        }
-    }
-}
-
-impl<'a, I> Iterator for Layout<'a, I>
-where
-    I: Iterator<Item = Token>,
-{
-    type Item = Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.should_keep_going {
-            loop {
-                self.insert_layout();
-                if let Some(current) = self.tokens.next() {
-                    self.current = current
-                } else {
-                    self.insert_final();
-                    self.should_keep_going = false;
-                }
-                if let token @ Some(_) = self.token_queue.pop_back() {
-                    break token;
-                }
-            }
-        } else {
-            self.token_queue.pop_back()
         }
     }
 }
