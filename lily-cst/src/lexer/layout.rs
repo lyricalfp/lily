@@ -152,8 +152,8 @@ where
         self.delimiters.truncate(take_n);
         for _ in 0..make_n {
             self.layouts.push(Token {
-                begin: current_position.offset,
-                end: current_position.offset,
+                begin: self.current.begin,
+                end: self.current.begin,
                 kind: TokenK::Layout(LayoutK::End),
             });
         }

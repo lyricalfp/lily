@@ -1,6 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
-    pub offset: usize,
     pub line: usize,
     pub column: usize,
 }
@@ -29,7 +28,6 @@ impl<'a> Lines<'a> {
         }
 
         Position {
-            offset,
             line,
             column,
         }
