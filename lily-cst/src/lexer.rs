@@ -14,7 +14,7 @@ pub fn lex(source: &str) -> impl Iterator<Item = Token> + '_ {
     let lines = Lines::new(source);
     let (tokens, annotations) = partition::split(cursor);
     let with_layout = Layout::new(lines, tokens);
-    partition::join(source, with_layout, annotations)
+    partition::join(lines, with_layout, annotations)
 }
 
 #[cfg(test)]

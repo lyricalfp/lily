@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, iter};
 
+use crate::lines::Lines;
+
 use super::cursor::{Token, TokenK};
 
 pub fn split(
@@ -13,15 +15,15 @@ pub fn split(
 }
 
 pub fn join(
-    s: &str,
+    l: Lines,
     i: impl Iterator<Item = Token>,
     j: impl Iterator<Item = Token>,
 ) -> impl Iterator<Item = Token> {
     let mut i = i.peekable();
     let mut j = j.peekable();
     let mut k = iter::once(Token {
-        begin: s.len(),
-        end: s.len(),
+        begin: l.eof_offset(),
+        end: l.eof_offset(),
         kind: TokenK::Eof,
     });
     iter::from_fn(move || match (i.peek(), j.peek()) {
