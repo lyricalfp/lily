@@ -1,9 +1,8 @@
 use std::{collections::VecDeque, iter::Peekable};
 
-use crate::{
-    lexer::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
-    lines::{Lines, Position},
-};
+use super::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
+
+use crate::lines::{Lines, Position};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DelimiterK {

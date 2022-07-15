@@ -2,13 +2,12 @@ pub mod cursor;
 pub mod layout;
 pub mod partition;
 
-use crate::{
-    lexer::{
-        cursor::{Cursor, Token},
-        layout::Layout,
-    },
-    lines::Lines,
+use self::{
+    cursor::{Cursor, Token},
+    layout::Layout,
 };
+
+use crate::lines::Lines;
 
 pub fn lex(source: &str) -> impl Iterator<Item = Token> + '_ {
     let cursor = Cursor::new(source);
