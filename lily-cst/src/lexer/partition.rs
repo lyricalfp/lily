@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, iter};
+use std::iter;
 
 use crate::lines::Lines;
 
@@ -36,10 +36,10 @@ pub fn join(
     });
     iter::from_fn(move || match (i.peek(), j.peek(), k.peek()) {
         (Some(x), Some(y), Some(z)) => {
-            let initial = if let TokenK::Layout(LayoutK::Separator | LayoutK::End) = y.kind {
-                std::cmp::min_by_key((1, y), (0, x), |(_, token)| token.end)
-            } else {
+            let initial = if let TokenK::Layout(LayoutK::Begin) = y.kind {
                 std::cmp::min_by_key((0, x), (1, y), |(_, token)| token.end)
+            } else {
+                std::cmp::min_by_key((1, y), (0, x), |(_, token)| token.end)
             };
             let (index, _) = std::cmp::min_by_key(initial, (2, z), |(_, token)| token.end);
             if index == 0 {

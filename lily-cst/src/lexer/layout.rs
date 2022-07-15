@@ -358,8 +358,7 @@ where
                     self.insert_final();
                     self.should_keep_going = false;
                 }
-                let token = self.token_queue.pop_back();
-                if token.is_some() {
+                if let token @ Some(_) = self.token_queue.pop_back() {
                     break token;
                 }
             }
