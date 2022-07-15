@@ -39,7 +39,7 @@ where
     tokens: Peekable<I>,
     current: Token,
     delimiters: Vec<(Position, DelimiterK)>,
-    layouts: Vec<Token>,
+    layouts: Vec<(usize, LayoutK)>,
 }
 
 impl<'a, I> Layout<'a, I>
@@ -70,7 +70,11 @@ where
                 break;
             }
         }
-        self.layouts.into_iter()
+        self.layouts.into_iter().map(|(offset, layout)| Token {
+            begin: offset,
+            end: offset,
+            kind: TokenK::Layout(layout),
+        })
     }
 }
 
@@ -115,11 +119,7 @@ where
         }
 
         self.delimiters.push((next_position, delimiter));
-        self.layouts.push(Token {
-            begin: self.current.end,
-            end: self.current.end,
-            kind: TokenK::Layout(LayoutK::Begin),
-        });
+        self.layouts.push((self.current.end, LayoutK::Begin));
     }
 
     fn insert_separator(&mut self) {
@@ -129,11 +129,7 @@ where
                 && current_position.column == position.column
                 && current_position.line > position.line
             {
-                self.layouts.push(Token {
-                    begin: self.current.begin,
-                    end: self.current.begin,
-                    kind: TokenK::Layout(LayoutK::Separator),
-                });
+                self.layouts.push((self.current.begin, LayoutK::Separator));
                 if let DelimiterK::KwOf = delimiter {
                     self.delimiters.push((
                         self.lines.get_position(self.current.begin),
@@ -151,11 +147,7 @@ where
         });
         self.delimiters.truncate(take_n);
         for _ in 0..make_n {
-            self.layouts.push(Token {
-                begin: self.current.begin,
-                end: self.current.begin,
-                kind: TokenK::Layout(LayoutK::End),
-            });
+            self.layouts.push((self.current.begin, LayoutK::End))
         }
     }
 
@@ -163,17 +155,9 @@ where
         let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
-                self.layouts.push(Token {
-                    begin: eof_offset,
-                    end: eof_offset,
-                    kind: TokenK::Layout(LayoutK::Separator),
-                });
+                self.layouts.push((eof_offset, LayoutK::Separator));
             } else if delimiter.is_indented() {
-                self.layouts.push(Token {
-                    begin: eof_offset,
-                    end: eof_offset,
-                    kind: TokenK::Layout(LayoutK::End),
-                });
+                self.layouts.push((eof_offset, LayoutK::End));
             }
         }
     }
@@ -193,11 +177,7 @@ where
                             if $commit {
                                 self.delimiters.truncate(take_n);
                                 for _ in 0..make_n {
-                                    self.layouts.push(Token {
-                                        begin: self.current.begin,
-                                        end: self.current.begin,
-                                        kind: TokenK::Layout(LayoutK::End),
-                                    });
+                                    self.layouts.push((self.current.begin, LayoutK::End));
                                 }
                             };
                             $expression
@@ -214,7 +194,6 @@ where
             Identifier(Case) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), KwCase));
             }
@@ -222,7 +201,6 @@ where
                 |_, delimiter| delimiter.is_indented(),
                 true ~ [.., (_, KwCase)] => {
                     self.delimiters.pop();
-
                     self.insert_begin(KwOf);
                     let next = self.tokens.peek().expect("non-eof");
                     self.delimiters
@@ -237,7 +215,6 @@ where
             Operator(Backslash) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), MaskLam));
             }
@@ -253,7 +230,6 @@ where
                     }
                 },
                 true ~ _ => {
-
                     if let Some((_, KwIf)) = self.delimiters.last() {
                         self.delimiters.pop();
                     }
@@ -265,19 +241,16 @@ where
             Identifier(Ado) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.insert_begin(KwAdo);
             }
             Identifier(Do) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.insert_begin(KwDo);
             }
             Identifier(If) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), KwIf));
             }
@@ -285,14 +258,12 @@ where
                 |_, delimiter| delimiter.is_indented(),
                 true ~ [.., (_, KwIf)] => {
                     self.delimiters.pop();
-
                     self.delimiters
                         .push((self.lines.get_position(self.current.begin), KwThen));
                 },
                 false ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-
                 },
             ),
             Identifier(Else) => end!(
@@ -310,7 +281,6 @@ where
             Identifier(Let) => {
                 self.insert_end();
                 self.insert_separator();
-
                 self.insert_begin(match self.delimiters.last() {
                     Some((_, KwAdo | KwDo)) => KwLetStmt,
                     _ => KwLetExpr,
@@ -325,17 +295,12 @@ where
                 },
                 true ~ [.., (_, KwAdo | KwLetExpr)] => {
                     self.delimiters.pop();
-                    self.layouts.push(Token {
-                        begin: self.current.begin,
-                        end: self.current.begin,
-                        kind: Layout(LayoutK::End),
-                    });
+                    self.layouts.push((self.current.begin, LayoutK::End))
 
                 },
                 false ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-
                 },
             ),
             _ => {
