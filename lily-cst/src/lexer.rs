@@ -7,7 +7,15 @@ use self::{
     layout::Layout,
 };
 
-use crate::lines::Lines;
+use crate::{error::CstErr, lines::Lines};
+
+pub fn lex(source: &str) -> Result<impl Iterator<Item = Token> + '_, CstErr> {
+    if source.is_empty() {
+        Err(CstErr::EmptySourceFile)
+    } else {
+        Ok(lex_non_empty(source))
+    }
+}
 
 pub fn lex_non_empty(source: &str) -> impl Iterator<Item = Token> + '_ {
     assert!(!source.is_empty());

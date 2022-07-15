@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 peekmore = "1.0.0"
+thiserror = "1.0.31"
 unicode_categories = "0.1.1"
 
 [dev-dependencies]
