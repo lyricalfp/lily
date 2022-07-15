@@ -9,7 +9,8 @@ use self::{
 
 use crate::lines::Lines;
 
-pub fn lex(source: &str) -> impl Iterator<Item = Token> + '_ {
+pub fn lex_non_empty(source: &str) -> impl Iterator<Item = Token> + '_ {
+    assert!(!source.is_empty());
     let cursor = Cursor::new(source);
     let lines = Lines::new(source);
     let (tokens, annotations) = partition::split(cursor);
@@ -21,7 +22,7 @@ pub fn lex(source: &str) -> impl Iterator<Item = Token> + '_ {
 mod tests {
     use crate::lexer::{
         cursor::{LayoutK, TokenK},
-        lex,
+        lex_non_empty,
     };
     use pretty_assertions::assert_eq;
 
@@ -121,7 +122,7 @@ adoLet = do
 
     #[test]
     fn ascending_position() {
-        let tokens = lex(SOURCE).collect::<Vec<_>>();
+        let tokens = lex_non_empty(SOURCE).collect::<Vec<_>>();
         for window in tokens.windows(2) {
             assert!(window[0].begin <= window[1].begin);
             assert!(window[0].end <= window[1].end);
@@ -226,7 +227,7 @@ adoLet = do{
 <eof>
 ";
 
-        for token in lex(SOURCE) {
+        for token in lex_non_empty(SOURCE) {
             if let TokenK::Layout(layout) = token.kind {
                 match layout {
                     LayoutK::Begin => actual.push('{'),
