@@ -31,7 +31,10 @@ impl DelimiterK {
     }
 }
 
-pub struct Layout<'a, I: Iterator> {
+pub struct Layout<'a, I>
+where
+    I: Iterator,
+{
     lines: Lines<'a>,
     tokens: Peekable<I>,
     current: Token,
@@ -46,9 +49,8 @@ where
 {
     pub fn new(lines: Lines<'a>, tokens: I) -> Self {
         let mut tokens = tokens.peekable();
-        let start = lines.get_position(tokens.peek().expect("non-empty tokens").begin);
-        let current = tokens.next().expect("non-empty tokens");
-        let delimiters = vec![(start, DelimiterK::MaskRoot)];
+        let current = tokens.next().expect("tokens must be non-empty");
+        let delimiters = vec![(lines.get_position(current.begin), DelimiterK::MaskRoot)];
         let token_queue = VecDeque::default();
         let should_keep_going = true;
         Self {
