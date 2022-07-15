@@ -13,11 +13,17 @@ pub fn split(
 }
 
 pub fn join(
+    s: &str,
     i: impl Iterator<Item = Token>,
     j: impl Iterator<Item = Token>,
 ) -> impl Iterator<Item = Token> {
     let mut i = i.peekable();
     let mut j = j.peekable();
+    let mut k = iter::once(Token {
+        begin: s.len(),
+        end: s.len(),
+        kind: TokenK::Eof,
+    });
     iter::from_fn(move || match (i.peek(), j.peek()) {
         (Some(x), Some(y)) => match x.kind {
             // layout tokens have priority over annotation tokens
@@ -38,6 +44,6 @@ pub fn join(
         },
         (Some(_), None) => i.next(),
         (None, Some(_)) => j.next(),
-        (None, None) => None,
+        (None, None) => k.next(),
     })
 }
