@@ -89,10 +89,6 @@ where
         (take_n, make_n)
     }
 
-    fn insert_current(&mut self) {
-        // self.token_queue.push_front(self.current);
-    }
-
     fn insert_begin(&mut self, delimiter: DelimiterK) {
         let next_offset = self.tokens.peek().expect("non-eof").begin;
         let next_position = self.lines.get_position(next_offset);
@@ -203,13 +199,12 @@ where
 
         match self.current.kind {
             Operator(Bang | Pipe | Question) => {
-                self.insert_current();
                 self.insert_begin(MaskTop);
             }
             Identifier(Case) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), KwCase));
             }
@@ -217,7 +212,7 @@ where
                 |_, delimiter| delimiter.is_indented(),
                 true ~ [.., (_, KwCase)] => {
                     self.delimiters.pop();
-                    self.insert_current();
+
                     self.insert_begin(KwOf);
                     let next = self.tokens.peek().expect("non-eof");
                     self.delimiters
@@ -226,13 +221,13 @@ where
                 true ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-                    self.insert_current();
+
                 },
             ),
             Operator(Backslash) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), MaskLam));
             }
@@ -248,7 +243,7 @@ where
                     }
                 },
                 true ~ _ => {
-                    self.insert_current();
+
                     if let Some((_, KwIf)) = self.delimiters.last() {
                         self.delimiters.pop();
                     }
@@ -260,19 +255,19 @@ where
             Identifier(Ado) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.insert_begin(KwAdo);
             }
             Identifier(Do) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.insert_begin(KwDo);
             }
             Identifier(If) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.delimiters
                     .push((self.lines.get_position(self.current.begin), KwIf));
             }
@@ -280,32 +275,32 @@ where
                 |_, delimiter| delimiter.is_indented(),
                 true ~ [.., (_, KwIf)] => {
                     self.delimiters.pop();
-                    self.insert_current();
+
                     self.delimiters
                         .push((self.lines.get_position(self.current.begin), KwThen));
                 },
                 false ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-                    self.insert_current();
+
                 },
             ),
             Identifier(Else) => end!(
                 |_, delimiter| delimiter.is_indented(),
                 true ~ [.., (_, KwThen)] => {
                     self.delimiters.pop();
-                    self.insert_current();
+
                 },
                 false ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-                    self.insert_current();
+
                 },
             ),
             Identifier(Let) => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
+
                 self.insert_begin(match self.delimiters.last() {
                     Some((_, KwAdo | KwDo)) => KwLetStmt,
                     _ => KwLetExpr,
@@ -325,18 +320,17 @@ where
                         end: self.current.begin,
                         kind: Layout(LayoutK::End),
                     });
-                    self.insert_current();
+
                 },
                 false ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-                    self.insert_current();
+
                 },
             ),
             _ => {
                 self.insert_end();
                 self.insert_separator();
-                self.insert_current();
             }
         }
     }
