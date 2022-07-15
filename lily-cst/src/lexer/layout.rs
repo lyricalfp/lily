@@ -209,7 +209,6 @@ where
                 true ~ _ => {
                     self.insert_end();
                     self.insert_separator();
-
                 },
             ),
             Operator(Backslash) => {
