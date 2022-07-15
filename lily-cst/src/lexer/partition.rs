@@ -35,29 +35,39 @@ pub fn join(
         kind: TokenK::Eof,
     });
     iter::from_fn(move || match (i.peek(), j.peek(), k.peek()) {
-        (Some(x), Some(y), Some(z)) => {
-            let initial = if let TokenK::Layout(LayoutK::Begin) = y.kind {
-                std::cmp::min_by_key((0, x), (1, y), |(_, token)| token.end)
-            } else {
-                std::cmp::min_by_key((1, y), (0, x), |(_, token)| token.end)
-            };
-            let (index, _) = std::cmp::min_by_key(initial, (2, z), |(_, token)| token.end);
-            if index == 0 {
-                i.next()
-            } else if index == 1 {
-                let kind = y.kind;
-                j.next();
-                Some(Token {
-                    begin: z.begin,
-                    end: z.begin,
-                    kind,
-                })
-            } else if index == 2 {
-                k.next()
-            } else {
-                unreachable!()
+        (Some(x), Some(y), Some(z)) => match y.kind {
+            TokenK::Layout(LayoutK::Begin) => {
+                if x.end <= y.end && x.end <= z.end {
+                    i.next()
+                } else if y.end <= x.end && y.end <= z.end {
+                    let kind = y.kind;
+                    j.next();
+                    Some(Token {
+                        begin: z.begin,
+                        end: z.begin,
+                        kind,
+                    })
+                } else {
+                    k.next()
+                }
             }
-        }
+            TokenK::Layout(LayoutK::Separator | LayoutK::End) => {
+                if y.end <= x.end && y.end <= z.end {
+                    let kind = y.kind;
+                    j.next();
+                    Some(Token {
+                        begin: z.begin,
+                        end: z.begin,
+                        kind,
+                    })
+                } else if x.end <= y.end && x.end <= z.end {
+                    i.next()
+                } else {
+                    k.next()
+                }
+            }
+            _ => unreachable!(),
+        },
 
         (Some(x), None, Some(z)) => {
             if x.begin < z.begin {
