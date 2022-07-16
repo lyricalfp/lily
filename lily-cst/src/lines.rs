@@ -15,11 +15,10 @@ impl<'a> Lines<'a> {
     }
 
     pub fn get_position(&self, offset: usize) -> Position {
-        let mut current = 0;
         let mut line = 1;
         let mut column = 1;
 
-        for character in self.source.chars() {
+        for (current, character) in self.source.chars().enumerate() {
             if current == offset {
                 break;
             }
@@ -29,7 +28,6 @@ impl<'a> Lines<'a> {
             } else {
                 column += 1;
             }
-            current += 1;
         }
 
         Position {
