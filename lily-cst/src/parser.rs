@@ -90,18 +90,28 @@ where
         }
         tokens
     }
-}
-
-impl<I> Parser<I>
-where
-    I: Iterator<Item = Token>,
-{
     pub fn collect_prefixes(&mut self) -> Vec<Token> {
         self.skip_whitespace();
         let comments = self.collect_comments();
         self.skip_whitespace();
         comments
     }
+    pub fn collect_binders(&mut self) -> Option<Vec<Token>> {
+        let mut binders = vec![];
+        while let TokenK::Operator(OperatorK::Underscore) | TokenK::Identifier(IdentifierK::Lower) =
+            self.peek()?.kind
+        {
+            binders.push(self.advance()?);
+            self.collect_prefixes();
+        }
+        Some(binders)
+    }
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
     pub fn header(&mut self) -> Option<Header> {
         self.collect_prefixes();
         let module_token = self.expect(TokenK::Identifier(IdentifierK::Module))?;
@@ -114,13 +124,14 @@ where
         self.collect_prefixes();
         match self.peek()?.kind {
             TokenK::Identifier(IdentifierK::Lower) => {
-                let lhs = self.advance()?;
+                let identifier = self.advance()?;
                 self.collect_prefixes();
+
                 if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
-                    let opr = self.advance()?;
+                    let colon = self.advance()?;
                     self.collect_prefixes();
-                    let rhs = self.collect_until_separator(0);
-                    return Some(Declaration::Type(Domain::Type, lhs, opr, rhs));
+                    let typ = self.collect_until_separator(0);
+                    return Some(Declaration::Type(Domain::Value, identifier, colon, typ));
                 }
 
                 if let TokenK::Operator(OperatorK::LessThan) = self.peek()?.kind {
@@ -131,39 +142,29 @@ where
                     todo!("instance declaration")
                 }
 
-                let mut bdr = vec![];
-                while let TokenK::Operator(OperatorK::Underscore)
-                | TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind
-                {
-                    bdr.push(self.advance()?);
-                    self.collect_prefixes();
-                }
+                let binders = self.collect_binders()?;
 
                 if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
-                    let opr = self.advance()?;
+                    let operator = self.advance()?;
                     self.collect_prefixes();
-                    let rhs = self.collect_until_separator(0);
-                    return Some(Declaration::Value(lhs, bdr, opr, rhs));
+                    let value = self.collect_until_separator(0);
+                    return Some(Declaration::Value(identifier, binders, operator, value));
                 }
 
                 None
             }
             TokenK::Identifier(IdentifierK::Upper) => {
-                let lhs = self.advance()?;
+                let identifier = self.advance()?;
                 self.collect_prefixes();
+
                 if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
-                    let opr = self.advance()?;
-                    let rhs = self.collect_until_separator(0);
-                    return Some(Declaration::Type(Domain::Type, lhs, opr, rhs));
+                    let colon = self.advance()?;
+                    self.collect_prefixes();
+                    let typ = self.collect_until_separator(0);
+                    return Some(Declaration::Type(Domain::Type, identifier, colon, typ));
                 }
 
-                let mut bdr = vec![];
-                while let TokenK::Operator(OperatorK::Underscore)
-                | TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind
-                {
-                    bdr.push(self.advance()?);
-                    self.collect_prefixes();
-                }
+                let _ = self.collect_binders()?;
 
                 if let TokenK::Operator(OperatorK::Question) = self.peek()?.kind {
                     todo!("data declaration")
