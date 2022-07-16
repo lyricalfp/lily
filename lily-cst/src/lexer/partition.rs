@@ -86,7 +86,13 @@ pub fn join(
             })
         }
         // TODO: determine if this is truly the case
-        (Some(_), Some(_), None) => unreachable!(),
+        (Some(x), Some(y), None) => {
+            if x.begin < y.begin {
+                i.next()
+            } else {
+                j.next()
+            }
+        },
 
         (Some(_), None, None) => i.next(),
         (None, Some(_), None) => j.next(),
