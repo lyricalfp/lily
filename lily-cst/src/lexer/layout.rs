@@ -40,6 +40,7 @@ where
     current: Token,
     delimiters: Vec<(Position, DelimiterK)>,
     layouts: Vec<(usize, LayoutK)>,
+    depth: usize,
 }
 
 impl<'a, I> Layout<'a, I>
@@ -51,12 +52,14 @@ where
         let current = tokens.next().expect("tokens must be non-empty");
         let delimiters = vec![(lines.get_position(current.begin), DelimiterK::MaskRoot)];
         let layouts = vec![];
+        let depth = 0;
         Self {
             lines,
             tokens,
             current,
             delimiters,
             layouts,
+            depth,
         }
     }
 
@@ -120,6 +123,7 @@ where
 
         self.delimiters.push((next_position, delimiter));
         self.layouts.push((self.current.end, LayoutK::Begin));
+        self.depth += 1;
     }
 
     fn insert_separator(&mut self) {
@@ -129,7 +133,8 @@ where
                 && current_position.column == position.column
                 && current_position.line > position.line
             {
-                self.layouts.push((self.current.begin, LayoutK::Separator));
+                self.layouts
+                    .push((self.current.begin, LayoutK::Separator(self.depth)));
                 if let DelimiterK::KwOf = delimiter {
                     self.delimiters.push((
                         self.lines.get_position(self.current.begin),
@@ -149,15 +154,18 @@ where
         for _ in 0..make_n {
             self.layouts.push((self.current.begin, LayoutK::End))
         }
+        self.depth = self.depth.saturating_sub(make_n);
     }
 
     fn insert_final(&mut self) {
         let eof_offset = self.lines.eof_offset();
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
-                self.layouts.push((eof_offset, LayoutK::Separator));
+                self.layouts
+                    .push((eof_offset, LayoutK::Separator(self.depth)));
             } else if delimiter.is_indented() {
                 self.layouts.push((eof_offset, LayoutK::End));
+                self.depth = self.depth.saturating_sub(1);
             }
         }
     }
@@ -179,6 +187,7 @@ where
                                 for _ in 0..make_n {
                                     self.layouts.push((self.current.begin, LayoutK::End));
                                 }
+                                self.depth = self.depth.saturating_sub(make_n);
                             };
                             $expression
                         }),+
@@ -294,7 +303,8 @@ where
                 },
                 true ~ [.., (_, KwAdo | KwLetExpr)] => {
                     self.delimiters.pop();
-                    self.layouts.push((self.current.begin, LayoutK::End))
+                    self.layouts.push((self.current.begin, LayoutK::End));
+                    self.depth = self.depth.saturating_sub(1);
 
                 },
                 false ~ _ => {

@@ -1,93 +1,122 @@
-use peekmore::PeekMoreIterator;
+use peekmore::{PeekMore, PeekMoreIterator};
 
 use crate::lexer::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ModuleHeader(pub Token, pub Token);
+pub struct Header(pub Token, pub Token);
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Declaration {
     Type(Token, Token, Vec<Token>),
 }
 
-pub fn skip_spaces(tokens: &mut PeekMoreIterator<impl Iterator<Item = Token>>) {
-    while let Some(Token {
-        kind: TokenK::Whitespace,
-        ..
-    }) = tokens.peek()
-    {
-        tokens.next();
+pub struct Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    tokens: PeekMoreIterator<I>,
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn new(tokens: I) -> Self {
+        let tokens = tokens.peekmore();
+        Self { tokens }
+    }
+
+    pub fn peek(&mut self) -> Option<&Token> {
+        self.tokens.peek()
+    }
+
+    pub fn advance(&mut self) -> Option<Token> {
+        self.tokens.next()
+    }
+
+    #[must_use]
+    pub fn expect(&mut self, kind: TokenK) -> Option<Token> {
+        if self.peek()?.kind == kind {
+            self.advance()
+        } else {
+            None
+        }
     }
 }
 
-pub fn skip_right(
-    tokens: &mut PeekMoreIterator<impl Iterator<Item = Token>>,
-) -> Option<Vec<Token>> {
-    let mut depth = 0;
-    let mut rhs = vec![];
-    loop {
-        match tokens.peek()?.kind {
-            TokenK::Layout(LayoutK::Separator) => {
-                if depth == 0 {
-                    tokens.next()?;
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn skip_whitespace(&mut self) {
+        while let Some(Token {
+            kind: TokenK::Whitespace,
+            ..
+        }) = self.peek()
+        {
+            self.advance().unwrap();
+        }
+    }
+    pub fn collect_comments(&mut self) -> Vec<Token> {
+        let mut comments = vec![];
+        while let Some(Token {
+            kind: TokenK::Comment(_),
+            ..
+        }) = self.peek()
+        {
+            comments.push(self.advance().unwrap())
+        }
+        comments
+    }
+    pub fn collect_until_separator(&mut self, depth: usize) -> Vec<Token> {
+        let mut tokens = vec![];
+        while let Some(token) = self.peek() {
+            if let TokenK::Layout(LayoutK::Separator(actual)) = token.kind {
+                if actual == depth {
                     break;
                 } else {
-                    rhs.push(tokens.next()?);
+                    tokens.push(self.advance().unwrap())
                 }
-            }
-            TokenK::Layout(LayoutK::Begin) => {
-                depth += 1;
-                rhs.push(tokens.next()?);
-            }
-            TokenK::Layout(LayoutK::End) => {
-                depth -= 1;
-                rhs.push(tokens.next()?);
-            }
-            _ => {
-                rhs.push(tokens.next()?);
+            } else {
+                tokens.push(self.advance().unwrap())
             }
         }
+        tokens
     }
-    Some(rhs)
 }
 
-pub fn module_header(
-    tokens: &mut PeekMoreIterator<impl Iterator<Item = Token>>,
-) -> Option<ModuleHeader> {
-    skip_spaces(tokens);
-
-    if let TokenK::Identifier(IdentifierK::Module) = tokens.peek()?.kind {
-        let module_token = tokens.next()?;
-        skip_spaces(tokens);
-        if let TokenK::Identifier(IdentifierK::Upper) = tokens.peek()?.kind {
-            let identifier_token = tokens.next()?;
-            skip_spaces(tokens);
-            if let TokenK::Layout(LayoutK::Separator) = tokens.peek()?.kind {
-                return Some(ModuleHeader(module_token, identifier_token));
-            }
-        }
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn header(&mut self) -> Option<Header> {
+        self.skip_whitespace();
+        self.collect_comments();
+        self.skip_whitespace();
+        let module_token = self.expect(TokenK::Identifier(IdentifierK::Module))?;
+        self.skip_whitespace();
+        self.collect_comments();
+        self.skip_whitespace();
+        let module_identifier = self.expect(TokenK::Identifier(IdentifierK::Upper))?;
+        self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
+        Some(Header(module_token, module_identifier))
     }
-
-    None
-}
-
-pub fn type_declaration(
-    tokens: &mut PeekMoreIterator<impl Iterator<Item = Token>>,
-) -> Option<Declaration> {
-    skip_spaces(tokens);
-
-    if let TokenK::Identifier(IdentifierK::Lower | IdentifierK::Upper) = tokens.peek()?.kind {
-        let identifier_token = tokens.next()?;
-        skip_spaces(tokens);
-        if let TokenK::Operator(OperatorK::Colon) = tokens.peek()?.kind {
-            let colon_token = tokens.next()?;
-            skip_spaces(tokens);
-            let rhs_tokens = skip_right(tokens)?;
-            return Some(Declaration::Type(identifier_token, colon_token, rhs_tokens));
-        }
+    pub fn declaration(&mut self) -> Option<Declaration> {
+        self.skip_whitespace();
+        self.collect_comments();
+        self.skip_whitespace();
+        let type_identifier = self.expect(TokenK::Identifier(IdentifierK::Upper))?;
+        self.skip_whitespace();
+        self.collect_comments();
+        self.skip_whitespace();
+        let colon_token = self.expect(TokenK::Operator(OperatorK::Colon))?;
+        self.skip_whitespace();
+        self.collect_comments();
+        self.skip_whitespace();
+        let rhs_tokens = self.collect_until_separator(0);
+        self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
+        Some(Declaration::Type(type_identifier, colon_token, rhs_tokens))
     }
-
-    None
 }
 
 #[cfg(test)]
@@ -99,18 +128,17 @@ mod tests {
             cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
             lex_non_empty,
         },
-        parser::{module_header, Declaration, ModuleHeader},
+        parser::{Declaration, Header, Parser},
     };
-
-    use super::type_declaration;
 
     #[test]
     fn test_module_header() {
         let source = "module Main";
-        let mut tokens = lex_non_empty(source).peekmore();
+        let tokens = lex_non_empty(source).peekmore();
+        let mut parser = Parser::new(tokens);
         assert_eq!(
-            module_header(&mut tokens),
-            Some(ModuleHeader(
+            parser.header(),
+            Some(Header(
                 Token {
                     begin: 0,
                     end: 6,
@@ -132,9 +160,10 @@ Type : do
   hello
   world
 ";
-        let mut tokens = lex_non_empty(source).peekmore();
+        let tokens = lex_non_empty(source).peekmore();
+        let mut parser = Parser::new(tokens);
         assert_eq!(
-            type_declaration(&mut tokens),
+            parser.declaration(),
             Some(Declaration::Type(
                 Token {
                     begin: 1,
@@ -170,7 +199,7 @@ Type : do
                     Token {
                         begin: 18,
                         end: 18,
-                        kind: TokenK::Layout(LayoutK::Separator)
+                        kind: TokenK::Layout(LayoutK::Separator(1))
                     },
                     Token {
                         begin: 18,

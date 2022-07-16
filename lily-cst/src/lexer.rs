@@ -242,7 +242,7 @@ adoLet = do{
                 match layout {
                     LayoutK::Begin => actual.push('{'),
                     LayoutK::End => actual.push('}'),
-                    LayoutK::Separator => actual.push(';'),
+                    LayoutK::Separator(_) => actual.push(';'),
                 }
             } else if let TokenK::Eof = token.kind {
                 actual.push_str("<eof>");
@@ -280,7 +280,7 @@ adoLet = do{
                 Token {
                     begin: 11,
                     end: 11,
-                    kind: TokenK::Layout(LayoutK::Separator),
+                    kind: TokenK::Layout(LayoutK::Separator(0)),
                 },
                 Token {
                     begin: 11,

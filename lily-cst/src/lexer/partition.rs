@@ -51,7 +51,7 @@ pub fn join(
                     k.next()
                 }
             }
-            TokenK::Layout(LayoutK::Separator | LayoutK::End) => {
+            TokenK::Layout(LayoutK::Separator(_) | LayoutK::End) => {
                 if y.end <= x.end && y.end <= z.end {
                     let kind = y.kind;
                     j.next();

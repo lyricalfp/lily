@@ -66,7 +66,7 @@ pub enum UnknownK {
 pub enum LayoutK {
     Begin,
     End,
-    Separator,
+    Separator(usize),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
