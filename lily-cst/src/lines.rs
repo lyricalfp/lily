@@ -15,16 +15,21 @@ impl<'a> Lines<'a> {
     }
 
     pub fn get_position(&self, offset: usize) -> Position {
+        let mut current = 0;
         let mut line = 1;
         let mut column = 1;
 
-        for character in self.source[..offset].chars() {
+        for character in self.source.chars() {
+            if current == offset {
+                break;
+            }
             if character == '\n' {
                 column = 1;
                 line += 1
             } else {
                 column += 1;
             }
+            current += 1;
         }
 
         Position {
