@@ -131,6 +131,7 @@ where
                     let colon = self.advance()?;
                     self.collect_prefixes();
                     let typ = self.collect_until_separator(0);
+                    self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Some(Declaration::Type(Domain::Value, identifier, colon, typ));
                 }
 
@@ -148,6 +149,7 @@ where
                     let operator = self.advance()?;
                     self.collect_prefixes();
                     let value = self.collect_until_separator(0);
+                    self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Some(Declaration::Value(identifier, binders, operator, value));
                 }
 
@@ -161,6 +163,7 @@ where
                     let colon = self.advance()?;
                     self.collect_prefixes();
                     let typ = self.collect_until_separator(0);
+                    self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Some(Declaration::Type(Domain::Type, identifier, colon, typ));
                 }
 
@@ -182,19 +185,37 @@ where
 
                 None
             }
-            token => {
-                dbg!("unexpected token {}", &token);
-                None
-            }
+            _ => None,
         }
+    }
+}
+
+impl<I> Parser<I>
+where
+    I: Iterator<Item = Token>,
+{
+    pub fn declarations(&mut self) -> Vec<Declaration> {
+        let mut declarations = vec![];
+        while let Some(declaration) = self.declaration() {
+            declarations.push(declaration);
+            self.collect_prefixes();
+        }
+        declarations
     }
 }
 
 #[test]
 fn it_works() {
-    let source = "f x y = 0";
+    let source = r"
+main : Effect Unit
+main = do
+  log something
+  log something
+";
     let mut parser = Parser::new(crate::lexer::lex_non_empty(source));
-    dbg!(parser.declaration());
+    for declaration in parser.declarations() {
+        dbg!(declaration);
+    }
 }
 
 #[cfg(test)]
