@@ -1,4 +1,5 @@
 use peekmore::{PeekMore, PeekMoreIterator};
+use thiserror::Error;
 
 use crate::lexer::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
@@ -17,6 +18,14 @@ pub enum Domain {
     Value,
 }
 
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum ParserErr {
+    #[error("no more tokens")]
+    NoMoreTokens,
+    #[error("unexpected token")]
+    UnexpectedToken(Token),
+}
+
 pub struct Parser<I>
 where
     I: Iterator<Item = Token>,
@@ -33,20 +42,20 @@ where
         Self { tokens }
     }
 
-    pub fn peek(&mut self) -> Option<&Token> {
-        self.tokens.peek()
+    pub fn peek(&mut self) -> Result<&Token, ParserErr> {
+        self.tokens.peek().ok_or(ParserErr::NoMoreTokens)
     }
 
-    pub fn advance(&mut self) -> Option<Token> {
-        self.tokens.next()
+    pub fn advance(&mut self) -> Result<Token, ParserErr> {
+        self.tokens.next().ok_or(ParserErr::NoMoreTokens)
     }
 
-    #[must_use]
-    pub fn expect(&mut self, kind: TokenK) -> Option<Token> {
-        if self.peek()?.kind == kind {
+    pub fn expect(&mut self, kind: TokenK) -> Result<Token, ParserErr> {
+        let token = self.peek()?;
+        if token.kind == kind {
             self.advance()
         } else {
-            None
+            Err(ParserErr::UnexpectedToken(*token))
         }
     }
 }
@@ -55,29 +64,30 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
-    pub fn skip_whitespace(&mut self) {
-        while let Some(Token {
-            kind: TokenK::Whitespace,
-            ..
-        }) = self.peek()
+    pub fn collect_binders(&mut self) -> Result<Vec<Token>, ParserErr> {
+        let mut binders = vec![];
+        while let TokenK::Operator(OperatorK::Underscore) | TokenK::Identifier(IdentifierK::Lower) =
+            self.peek()?.kind
         {
-            self.advance().unwrap();
+            binders.push(self.advance()?);
+            self.collect_prefixes();
         }
+        Ok(binders)
     }
-    pub fn collect_comments(&mut self) -> Vec<Token> {
-        let mut comments = vec![];
-        while let Some(Token {
-            kind: TokenK::Comment(_),
+    pub fn collect_prefixes(&mut self) -> Vec<Token> {
+        let mut prefixes = vec![];
+        while let Ok(Token {
+            kind: TokenK::Comment(_) | TokenK::Whitespace,
             ..
         }) = self.peek()
         {
-            comments.push(self.advance().unwrap())
+            prefixes.push(self.advance().unwrap())
         }
-        comments
+        prefixes
     }
     pub fn collect_until_separator(&mut self, depth: usize) -> Vec<Token> {
         let mut tokens = vec![];
-        while let Some(token) = self.peek() {
+        while let Ok(token) = self.peek() {
             if let TokenK::Layout(LayoutK::Separator(actual)) = token.kind {
                 if actual == depth {
                     break;
@@ -90,21 +100,16 @@ where
         }
         tokens
     }
-    pub fn collect_prefixes(&mut self) -> Vec<Token> {
-        self.skip_whitespace();
-        let comments = self.collect_comments();
-        self.skip_whitespace();
-        comments
-    }
-    pub fn collect_binders(&mut self) -> Option<Vec<Token>> {
-        let mut binders = vec![];
-        while let TokenK::Operator(OperatorK::Underscore) | TokenK::Identifier(IdentifierK::Lower) =
-            self.peek()?.kind
-        {
-            binders.push(self.advance()?);
-            self.collect_prefixes();
+    pub fn skip_to_after_separator(&mut self, depth: usize) {
+        while let Ok(token) = self.peek() {
+            if let TokenK::Layout(LayoutK::Separator(actual)) = token.kind {
+                let _ = self.advance();
+                if actual == depth {
+                    break;
+                }
+            }
+            let _ = self.advance();
         }
-        Some(binders)
     }
 }
 
@@ -112,15 +117,15 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
-    pub fn header(&mut self) -> Option<Header> {
+    pub fn header(&mut self) -> Result<Header, ParserErr> {
         self.collect_prefixes();
         let module_token = self.expect(TokenK::Identifier(IdentifierK::Module))?;
         self.collect_prefixes();
         let module_identifier = self.expect(TokenK::Identifier(IdentifierK::Upper))?;
         self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
-        Some(Header(module_token, module_identifier))
+        Ok(Header(module_token, module_identifier))
     }
-    pub fn declaration(&mut self) -> Option<Declaration> {
+    pub fn declaration(&mut self) -> Result<Declaration, ParserErr> {
         self.collect_prefixes();
         match self.peek()?.kind {
             TokenK::Identifier(IdentifierK::Lower) => {
@@ -132,7 +137,7 @@ where
                     self.collect_prefixes();
                     let typ = self.collect_until_separator(0);
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
-                    return Some(Declaration::Type(Domain::Value, identifier, colon, typ));
+                    return Ok(Declaration::Type(Domain::Value, identifier, colon, typ));
                 }
 
                 if let TokenK::Operator(OperatorK::LessThan) = self.peek()?.kind {
@@ -150,10 +155,10 @@ where
                     self.collect_prefixes();
                     let value = self.collect_until_separator(0);
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
-                    return Some(Declaration::Value(identifier, binders, operator, value));
+                    return Ok(Declaration::Value(identifier, binders, operator, value));
                 }
 
-                None
+                Err(ParserErr::UnexpectedToken(*self.peek()?))
             }
             TokenK::Identifier(IdentifierK::Upper) => {
                 let identifier = self.advance()?;
@@ -164,7 +169,7 @@ where
                     self.collect_prefixes();
                     let typ = self.collect_until_separator(0);
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
-                    return Some(Declaration::Type(Domain::Type, identifier, colon, typ));
+                    return Ok(Declaration::Type(Domain::Type, identifier, colon, typ));
                 }
 
                 let _ = self.collect_binders()?;
@@ -183,9 +188,9 @@ where
                     todo!("type class")
                 }
 
-                None
+                Err(ParserErr::UnexpectedToken(*self.peek()?))
             }
-            _ => None,
+            _ => Err(ParserErr::UnexpectedToken(*self.peek()?)),
         }
     }
 }
@@ -194,27 +199,21 @@ impl<I> Parser<I>
 where
     I: Iterator<Item = Token>,
 {
-    pub fn declarations(&mut self) -> Vec<Declaration> {
+    pub fn declarations(&mut self) -> Vec<Result<Declaration, ParserErr>> {
         let mut declarations = vec![];
-        while let Some(declaration) = self.declaration() {
-            declarations.push(declaration);
-            self.collect_prefixes();
+        loop {
+            match self.declaration() {
+                Ok(declaration) => declarations.push(Ok(declaration)),
+                Err(ParserErr::UnexpectedToken(Token {
+                    kind: TokenK::Eof, ..
+                })) => break,
+                Err(error) => {
+                    declarations.push(Err(error));
+                    self.skip_to_after_separator(0);
+                }
+            }
         }
         declarations
-    }
-}
-
-#[test]
-fn it_works() {
-    let source = r"
-main : Effect Unit
-main = do
-  log something
-  log something
-";
-    let mut parser = Parser::new(crate::lexer::lex_non_empty(source));
-    for declaration in parser.declarations() {
-        dbg!(declaration);
     }
 }
 
@@ -237,7 +236,7 @@ mod tests {
         let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.header(),
-            Some(Header(
+            Ok(Header(
                 Token {
                     begin: 0,
                     end: 6,
@@ -263,7 +262,7 @@ Type : do
         let mut parser = Parser::new(tokens);
         assert_eq!(
             parser.declaration(),
-            Some(Declaration::Type(
+            Ok(Declaration::Type(
                 Domain::Type,
                 Token {
                     begin: 1,
@@ -319,5 +318,19 @@ Type : do
                 ]
             ))
         );
+    }
+
+    #[test]
+    fn best_effort_parsing() {
+        let source = r"
+main : Effect Unit
+main & Effect Unit
+main : Effect Unit
+";
+        let mut parser = Parser::new(crate::lexer::lex_non_empty(source));
+        let mut declarations = parser.declarations().into_iter();
+        assert!(declarations.next().unwrap().is_ok());
+        assert!(declarations.next().unwrap().is_err());
+        assert!(declarations.next().unwrap().is_ok());
     }
 }
