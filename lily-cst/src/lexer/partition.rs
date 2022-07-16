@@ -85,7 +85,6 @@ pub fn join(
                 kind,
             })
         }
-        // TODO: determine if this is truly the case
         (Some(x), Some(y), None) => {
             if x.begin < y.begin {
                 i.next()

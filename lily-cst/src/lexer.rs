@@ -34,6 +34,8 @@ mod tests {
     };
     use pretty_assertions::assert_eq;
 
+    use super::cursor::{IdentifierK, Token};
+
     const SOURCE: &str = r"module Main
 
 Identity : Type -> Type
@@ -251,5 +253,41 @@ adoLet = do{
         actual.push('\n');
         print!("{}", actual);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn only_module_header() {
+        let source = "module Main";
+        let tokens = lex_non_empty(source);
+        assert_eq!(
+            tokens.collect::<Vec<_>>(),
+            vec![
+                Token {
+                    begin: 0,
+                    end: 6,
+                    kind: TokenK::Identifier(IdentifierK::Module)
+                },
+                Token {
+                    begin: 6,
+                    end: 7,
+                    kind: TokenK::Whitespace,
+                },
+                Token {
+                    begin: 7,
+                    end: 11,
+                    kind: TokenK::Identifier(IdentifierK::Upper),
+                },
+                Token {
+                    begin: 11,
+                    end: 11,
+                    kind: TokenK::Layout(LayoutK::Separator),
+                },
+                Token {
+                    begin: 11,
+                    end: 11,
+                    kind: TokenK::Eof,
+                }
+            ]
+        )
     }
 }
