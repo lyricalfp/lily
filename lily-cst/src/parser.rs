@@ -114,90 +114,54 @@ where
         self.collect_prefixes();
         match self.peek()?.kind {
             TokenK::Identifier(IdentifierK::Lower) => {
-                let declaration_lhs = self.advance()?;
-                self.collect_prefixes();
-                match self.peek()?.kind {
-                    TokenK::Operator(OperatorK::Colon) => {
-                        let declaration_mid = self.advance()?;
-                        let declaration_rhs = self.collect_until_separator(0);
-                        Some(Declaration::Type(
-                            Domain::Value,
-                            declaration_lhs,
-                            declaration_mid,
-                            declaration_rhs,
-                        ))
-                    }
-                    TokenK::Operator(OperatorK::LessThan) => {
-                        todo!("parsing for instance")
-                    }
-                    TokenK::Operator(OperatorK::Pipe) => {
-                        todo!("parsing for instance chain")
-                    }
-                    TokenK::Operator(OperatorK::Equal) => {
-                        let declaration_bdr = vec![];
-                        let declaration_mid = self.advance()?;
-                        self.collect_prefixes();
-                        let declaration_rhs = self.collect_until_separator(0);
-                        Some(Declaration::Value(
-                            declaration_lhs,
-                            declaration_bdr,
-                            declaration_mid,
-                            declaration_rhs,
-                        ))
-                    }
-                    TokenK::Operator(OperatorK::Underscore)
-                    | TokenK::Identifier(IdentifierK::Lower) => {
-                        let mut declaration_bdr = vec![self.advance()?];
-                        loop {
-                            self.collect_prefixes();
-                            match self.peek()?.kind {
-                                TokenK::Operator(OperatorK::Underscore)
-                                | TokenK::Identifier(IdentifierK::Lower) => {
-                                    declaration_bdr.push(self.advance()?);
-                                }
-                                TokenK::Operator(OperatorK::Equal) => {
-                                    let declaration_mid = self.advance()?;
-                                    self.collect_prefixes();
-                                    let declaration_rhs = self.collect_until_separator(0);
-                                    break Some(Declaration::Value(
-                                        declaration_lhs,
-                                        declaration_bdr,
-                                        declaration_mid,
-                                        declaration_rhs,
-                                    ));
-                                }
-                                token => {
-                                    dbg!("unexpected token {}", &token);
-                                    break None;
-                                }
-                            }
-                        }
-                    }
-                    token => {
-                        dbg!("unexpected token {}", &token);
-                        None
-                    }
-                }
-            }
-            TokenK::Identifier(IdentifierK::Upper) => {
-                let declaration_lhs = self.advance()?;
+                let lhs = self.advance()?;
                 self.collect_prefixes();
                 if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
-                    let declaration_mid = self.advance()?;
-                    let declaration_rhs = self.collect_until_separator(0);
-                    return Some(Declaration::Type(
-                        Domain::Type,
-                        declaration_lhs,
-                        declaration_mid,
-                        declaration_rhs,
-                    ));
+                    let opr = self.advance()?;
+                    self.collect_prefixes();
+                    let rhs = self.collect_until_separator(0);
+                    return Some(Declaration::Type(Domain::Type, lhs, opr, rhs));
                 }
 
-                let mut declaration_bdr = vec![];
+                if let TokenK::Operator(OperatorK::LessThan) = self.peek()?.kind {
+                    todo!("instance chain")
+                }
+
+                if let TokenK::Operator(OperatorK::Pipe) = self.peek()?.kind {
+                    todo!("instance declaration")
+                }
+
+                let mut bdr = vec![];
                 while let TokenK::Operator(OperatorK::Underscore)
                 | TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind
                 {
-                    declaration_bdr.push(self.advance()?);
+                    bdr.push(self.advance()?);
+                    self.collect_prefixes();
+                }
+
+                if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
+                    let opr = self.advance()?;
+                    self.collect_prefixes();
+                    let rhs = self.collect_until_separator(0);
+                    return Some(Declaration::Value(lhs, bdr, opr, rhs));
+                }
+
+                None
+            }
+            TokenK::Identifier(IdentifierK::Upper) => {
+                let lhs = self.advance()?;
+                self.collect_prefixes();
+                if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
+                    let opr = self.advance()?;
+                    let rhs = self.collect_until_separator(0);
+                    return Some(Declaration::Type(Domain::Type, lhs, opr, rhs));
+                }
+
+                let mut bdr = vec![];
+                while let TokenK::Operator(OperatorK::Underscore)
+                | TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind
+                {
+                    bdr.push(self.advance()?);
                     self.collect_prefixes();
                 }
 
@@ -227,7 +191,7 @@ where
 
 #[test]
 fn it_works() {
-    let source = "F ? ...";
+    let source = "f x y = 0";
     let mut parser = Parser::new(crate::lexer::lex_non_empty(source));
     dbg!(parser.declaration());
 }
