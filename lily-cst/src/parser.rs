@@ -31,8 +31,9 @@ pub fn skip_right(
                 if depth == 0 {
                     tokens.next()?;
                     break;
+                } else {
+                    rhs.push(tokens.next()?);
                 }
-                rhs.push(tokens.next()?);
             }
             TokenK::Layout(LayoutK::Begin) => {
                 depth += 1;
@@ -55,25 +56,13 @@ pub fn module_header(
 ) -> Option<ModuleHeader> {
     skip_spaces(tokens);
 
-    if let Token {
-        kind: TokenK::Identifier(IdentifierK::Module),
-        ..
-    } = tokens.peek()?
-    {
+    if let TokenK::Identifier(IdentifierK::Module) = tokens.peek()?.kind {
         let module_token = tokens.next()?;
         skip_spaces(tokens);
-        if let Token {
-            kind: TokenK::Identifier(IdentifierK::Upper),
-            ..
-        } = tokens.peek()?
-        {
+        if let TokenK::Identifier(IdentifierK::Upper) = tokens.peek()?.kind {
             let identifier_token = tokens.next()?;
             skip_spaces(tokens);
-            if let Token {
-                kind: TokenK::Layout(LayoutK::Separator),
-                ..
-            } = tokens.peek()?
-            {
+            if let TokenK::Layout(LayoutK::Separator) = tokens.peek()?.kind {
                 return Some(ModuleHeader(module_token, identifier_token));
             }
         }
