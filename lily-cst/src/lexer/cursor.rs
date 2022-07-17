@@ -42,10 +42,10 @@ pub enum OperatorK {
     Equal,
     GreaterThan,
     LessThan,
-    Normal,
     Period,
     Pipe,
     Question,
+    Source,
     Underscore,
 }
 
@@ -210,7 +210,7 @@ impl<'a> Cursor<'a> {
                     "_" => OperatorK::Underscore,
                     "<" => OperatorK::LessThan,
                     ">" => OperatorK::GreaterThan,
-                    _ => OperatorK::Normal,
+                    _ => OperatorK::Source,
                 })
             }
             // Digits
@@ -276,7 +276,7 @@ mod tests {
             Token {
                 begin: 1,
                 end: 3,
-                kind: TokenK::Operator(OperatorK::Normal),
+                kind: TokenK::Operator(OperatorK::Source),
             },
             Token {
                 begin: 3,
