@@ -204,9 +204,12 @@ where
         loop {
             match self.declaration() {
                 Ok(declaration) => declarations.push(Ok(declaration)),
-                Err(ParserErr::UnexpectedToken(Token {
-                    kind: TokenK::Eof, ..
-                })) => break,
+                Err(
+                    ParserErr::UnexpectedToken(Token {
+                        kind: TokenK::Eof, ..
+                    })
+                    | ParserErr::NoMoreTokens,
+                ) => break,
                 Err(error) => {
                     declarations.push(Err(error));
                     self.skip_to_after_separator(0);
