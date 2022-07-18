@@ -76,19 +76,7 @@ where
     }
 
     pub fn expression_with_power(&mut self, minimum_power: u8) -> Option<Expression<'a>> {
-        let mut accumulator = match self.tokens.next()? {
-            Token { begin, end, kind } => {
-                let text = self.from_source(begin, end);
-                self.from_kind(match kind {
-                    TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
-                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
-                    TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
-                    TokenK::Identifier(IdentifierK::Upper) => ExpressionK::Constructor(text),
-                    _ => panic!("bad token {:?}", kind),
-                })
-            }
-        };
-
+        let mut accumulator = self.advance()?;
         loop {
             if let Some(&Token {
                 begin,
@@ -111,20 +99,7 @@ where
             };
 
             if let Some(_) = self.tokens.peek() {
-                let argument = match self.tokens.next()? {
-                    Token { begin, end, kind } => {
-                        let text = self.from_source(begin, end);
-                        self.from_kind(match kind {
-                            TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
-                            TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
-                            TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
-                            TokenK::Identifier(IdentifierK::Upper) => {
-                                ExpressionK::Constructor(text)
-                            }
-                            _ => panic!("bad token {:?}", kind),
-                        })
-                    }
-                };
+                let argument = self.advance()?;
                 accumulator = self.from_kind(ExpressionK::Application(accumulator, argument));
                 continue;
             };
@@ -133,6 +108,21 @@ where
         }
 
         Some(accumulator)
+    }
+
+    pub fn advance(&mut self) -> Option<Expression<'a>> {
+        Some(match self.tokens.next()? {
+            Token { begin, end, kind } => {
+                let text = self.from_source(begin, end);
+                self.from_kind(match kind {
+                    TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
+                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
+                    TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
+                    TokenK::Identifier(IdentifierK::Upper) => ExpressionK::Constructor(text),
+                    _ => panic!("bad token {:?}", kind),
+                })
+            }
+        })
     }
 
     #[inline]
