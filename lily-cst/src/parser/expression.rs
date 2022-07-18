@@ -1,6 +1,6 @@
 use std::{fmt::Display, iter::Peekable};
 
-use lily_interner::{Interned, Interner};
+use lily_interner::{Interned, InternedString, Interner, StringInterner};
 use rustc_hash::FxHashMap;
 
 use crate::lexer::cursor::{DigitK, IdentifierK, OperatorK, Token, TokenK};
@@ -8,23 +8,19 @@ use crate::lexer::cursor::{DigitK, IdentifierK, OperatorK, Token, TokenK};
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ExpressionK<'a> {
     Application(Expression<'a>, Expression<'a>),
-    BinaryOperator(Expression<'a>, &'a str, Expression<'a>),
-    Constructor(&'a str),
-    Float(&'a str),
-    Int(&'a str),
-    Variable(&'a str),
+    BinaryOperator(Expression<'a>, InternedString<'a>, Expression<'a>),
+    Constructor(InternedString<'a>),
+    Float(InternedString<'a>),
+    Int(InternedString<'a>),
+    Variable(InternedString<'a>),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Expression<'a> {
-    begin: usize,
-    end: usize,
-    kind: Interned<'a, ExpressionK<'a>>,
-}
+pub struct Expression<'a>(Interned<'a, ExpressionK<'a>>);
 
 impl<'a> Display for Expression<'a> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind.0 {
+        match self.0 .0 {
             ExpressionK::Application(f, x) => write!(formatter, "{} {}", f, x),
             ExpressionK::BinaryOperator(l, o, r) => write!(formatter, "{} {} {}", l, o, r),
             ExpressionK::Constructor(x)
@@ -43,6 +39,7 @@ where
     tokens: Peekable<I>,
     powers: FxHashMap<&'a str, (u8, u8)>,
     interner: Interner<'a, ExpressionK<'a>>,
+    strings: StringInterner<'a>,
 }
 
 impl<'a, I> Pratt<'a, I>
@@ -54,13 +51,19 @@ where
         tokens: Peekable<I>,
         powers: FxHashMap<&'a str, (u8, u8)>,
         interner: Interner<'a, ExpressionK<'a>>,
+        strings: StringInterner<'a>,
     ) -> Self {
         Self {
             source,
             tokens,
             powers,
             interner,
+            strings,
         }
+    }
+
+    pub fn reclaim(self) -> (Interner<'a, ExpressionK<'a>>, StringInterner<'a>) {
+        (self.interner, self.strings)
     }
 }
 
@@ -75,18 +78,14 @@ where
     pub fn expression_with_power(&mut self, minimum_power: u8) -> Option<Expression<'a>> {
         let mut accumulator = match self.tokens.next()? {
             Token { begin, end, kind } => {
-                let kind = self.interner.intern(match kind {
-                    TokenK::Digit(DigitK::Float) => ExpressionK::Float(&self.source[begin..end]),
-                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(&self.source[begin..end]),
-                    TokenK::Identifier(IdentifierK::Lower) => {
-                        ExpressionK::Variable(&self.source[begin..end])
-                    }
-                    TokenK::Identifier(IdentifierK::Upper) => {
-                        ExpressionK::Constructor(&self.source[begin..end])
-                    }
+                let text = self.from_source(begin, end);
+                self.from_kind(match kind {
+                    TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
+                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
+                    TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
+                    TokenK::Identifier(IdentifierK::Upper) => ExpressionK::Constructor(text),
                     _ => panic!("bad token {:?}", kind),
-                });
-                Expression { begin, end, kind }
+                })
             }
         };
 
@@ -103,43 +102,30 @@ where
                     break;
                 }
                 let operator = match self.tokens.next()? {
-                    Token { begin, end, .. } => &self.source[begin..end],
+                    Token { begin, end, .. } => self.from_source(begin, end),
                 };
                 let argument = self.expression_with_power(right_power)?;
-                let kind = self.interner.intern(ExpressionK::BinaryOperator(
-                    accumulator,
-                    operator,
-                    argument,
-                ));
-                accumulator = Expression { begin, end, kind };
+                accumulator =
+                    self.from_kind(ExpressionK::BinaryOperator(accumulator, operator, argument));
                 continue;
             };
 
-            if let Some(&Token { begin, end, .. }) = self.tokens.peek() {
+            if let Some(_) = self.tokens.peek() {
                 let argument = match self.tokens.next()? {
                     Token { begin, end, kind } => {
-                        let kind = self.interner.intern(match kind {
-                            TokenK::Digit(DigitK::Float) => {
-                                ExpressionK::Float(&self.source[begin..end])
-                            }
-                            TokenK::Digit(DigitK::Int) => {
-                                ExpressionK::Int(&self.source[begin..end])
-                            }
-                            TokenK::Identifier(IdentifierK::Lower) => {
-                                ExpressionK::Variable(&self.source[begin..end])
-                            }
+                        let text = self.from_source(begin, end);
+                        self.from_kind(match kind {
+                            TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
+                            TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
+                            TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
                             TokenK::Identifier(IdentifierK::Upper) => {
-                                ExpressionK::Constructor(&self.source[begin..end])
+                                ExpressionK::Constructor(text)
                             }
                             _ => panic!("bad token {:?}", kind),
-                        });
-                        Expression { begin, end, kind }
+                        })
                     }
                 };
-                let kind = self
-                    .interner
-                    .intern(ExpressionK::Application(accumulator, argument));
-                accumulator = Expression { begin, end, kind };
+                accumulator = self.from_kind(ExpressionK::Application(accumulator, argument));
                 continue;
             };
 
@@ -148,12 +134,22 @@ where
 
         Some(accumulator)
     }
+
+    #[inline]
+    pub fn from_source(&mut self, begin: usize, end: usize) -> InternedString<'a> {
+        self.strings.intern(&self.source[begin..end])
+    }
+
+    #[inline]
+    pub fn from_kind(&mut self, kind: ExpressionK<'a>) -> Expression<'a> {
+        Expression(self.interner.intern(kind))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use bumpalo::Bump;
-    use lily_interner::Interner;
+    use lily_interner::{Interner, StringInterner};
     use rustc_hash::FxHashMap;
 
     use crate::lexer::cursor::{Cursor, Token, TokenK};
@@ -167,6 +163,7 @@ mod tests {
         let mut powers = FxHashMap::default();
         let arena = Bump::new();
         let interner = Interner::new(&arena);
+        let strings = StringInterner::new(&arena);
         powers.insert("+", (1, 2));
         powers.insert("-", (1, 2));
         powers.insert("*", (3, 4));
@@ -179,6 +176,7 @@ mod tests {
                 .peekable(),
             powers,
             interner,
+            strings,
         );
         println!("{}", expression.expression().unwrap());
         println!("Allocated {} bytes.", arena.allocated_bytes());
