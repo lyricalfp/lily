@@ -157,13 +157,14 @@ mod tests {
     use super::Pratt;
 
     #[test]
-    fn it_works() {
+    fn simple_example() {
         let source = "f x y + f x y * f x y + f x y";
         let tokens = Cursor::new(source).collect::<Vec<Token>>();
         let mut powers = FxHashMap::default();
-        let arena = Bump::new();
-        let interner = Interner::new(&arena);
-        let strings = StringInterner::new(&arena);
+        let arena_0 = Bump::new();
+        let arena_1 = Bump::new();
+        let interner = Interner::new(&arena_0);
+        let strings = StringInterner::new(&arena_1);
         powers.insert("+", (1, 2));
         powers.insert("-", (1, 2));
         powers.insert("*", (3, 4));
@@ -178,7 +179,15 @@ mod tests {
             interner,
             strings,
         );
-        println!("{}", expression.expression().unwrap());
-        println!("Allocated {} bytes.", arena.allocated_bytes());
+        let result = expression.expression().unwrap();
+        assert_eq!(format!("{}", result), source);
+        println!(
+            "Allocated {} bytes on expressions",
+            arena_0.allocated_bytes()
+        );
+        println!(
+            "Allocated {} bytes on string slices",
+            arena_1.allocated_bytes()
+        );
     }
 }
