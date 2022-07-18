@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, Debug},
+    fmt::{self, Debug, Display},
     hash::Hash,
     ops::Deref,
     ptr,
@@ -92,6 +92,82 @@ where
             self.entries.push(value);
 
             Interned::new(value)
+        }
+    }
+}
+
+pub struct InternedString<'a>(pub &'a str, pub private::Zst);
+
+impl<'a> InternedString<'a> {
+    fn new(value: &'a str) -> Self {
+        Self(value, private::Zst)
+    }
+}
+
+impl Debug for InternedString<'_> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_tuple("InternedString")
+            .field(&self.0)
+            .finish()
+    }
+}
+
+impl Display for InternedString<'_> {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}", self.0)
+    }
+}
+
+impl PartialEq for InternedString<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(self.0, other.0)
+    }
+}
+
+impl Clone for InternedString<'_> {
+    fn clone(&self) -> Self {
+        Self(self.0, private::Zst)
+    }
+}
+
+impl Copy for InternedString<'_> {}
+
+impl Eq for InternedString<'_> {}
+
+impl Hash for InternedString<'_> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        ptr::hash(self.0, state)
+    }
+}
+
+#[derive(Debug)]
+pub struct StringInterner<'a> {
+    map: FxHashMap<&'a str, usize>,
+    vec: Vec<&'a str>,
+    arena: &'a Bump,
+}
+
+impl<'a> StringInterner<'a> {
+    pub fn new(arena: &'a Bump) -> Self {
+        Self {
+            map: FxHashMap::default(),
+            vec: Vec::default(),
+            arena,
+        }
+    }
+
+    pub fn intern(&mut self, value: &'a str) -> InternedString<'a> {
+        if let Some(&index) = self.map.get(&value) {
+            InternedString::new(self.vec[index])
+        } else {
+            let value = self.arena.alloc_str(value);
+            let index = self.vec.len();
+
+            self.map.insert(value, index);
+            self.vec.push(value);
+
+            InternedString::new(value)
         }
     }
 }
