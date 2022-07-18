@@ -3,7 +3,7 @@ use std::{fmt::Display, iter::Peekable};
 use lily_interner::{Interned, InternedString, Interner, StringInterner};
 use rustc_hash::FxHashMap;
 
-use crate::lexer::cursor::{DigitK, IdentifierK, OperatorK, Token, TokenK};
+use crate::lexer::cursor::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ExpressionK<'a> {
@@ -13,6 +13,7 @@ pub enum ExpressionK<'a> {
     Float(InternedString<'a>),
     Int(InternedString<'a>),
     Variable(InternedString<'a>),
+    Parenthesized(Expression<'a>),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -27,6 +28,7 @@ impl<'a> Display for Expression<'a> {
             | ExpressionK::Float(x)
             | ExpressionK::Int(x)
             | ExpressionK::Variable(x) => write!(formatter, "{}", x),
+            ExpressionK::Parenthesized(x) => write!(formatter, "({})", x),
         }
     }
 }
@@ -98,9 +100,24 @@ where
                 continue;
             };
 
+            if let Some(Token {
+                kind: TokenK::CloseDelimiter(_),
+                ..
+            }) = self.tokens.peek()
+            {
+                break;
+            }
+
             if let Some(_) = self.tokens.peek() {
                 let argument = self.advance()?;
                 accumulator = self.from_kind(ExpressionK::Application(accumulator, argument));
+                if let Some(Token {
+                    kind: TokenK::CloseDelimiter(_),
+                    ..
+                }) = self.tokens.peek()
+                {
+                    break;
+                }
                 continue;
             };
 
@@ -113,14 +130,28 @@ where
     pub fn advance(&mut self) -> Option<Expression<'a>> {
         Some(match self.tokens.next()? {
             Token { begin, end, kind } => {
-                let text = self.from_source(begin, end);
-                self.from_kind(match kind {
-                    TokenK::Digit(DigitK::Float) => ExpressionK::Float(text),
-                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(text),
-                    TokenK::Identifier(IdentifierK::Lower) => ExpressionK::Variable(text),
-                    TokenK::Identifier(IdentifierK::Upper) => ExpressionK::Constructor(text),
+                let kind = match kind {
+                    TokenK::Digit(DigitK::Float) => {
+                        ExpressionK::Float(self.from_source(begin, end))
+                    }
+                    TokenK::Digit(DigitK::Int) => ExpressionK::Int(self.from_source(begin, end)),
+                    TokenK::Identifier(IdentifierK::Lower) => {
+                        ExpressionK::Variable(self.from_source(begin, end))
+                    }
+                    TokenK::Identifier(IdentifierK::Upper) => {
+                        ExpressionK::Constructor(self.from_source(begin, end))
+                    }
+                    TokenK::OpenDelimiter(DelimiterK::Round) => {
+                        let initial = self.expression()?;
+                        assert_eq!(
+                            self.tokens.next()?.kind,
+                            TokenK::CloseDelimiter(DelimiterK::Round)
+                        );
+                        ExpressionK::Parenthesized(initial)
+                    }
                     _ => panic!("bad token {:?}", kind),
-                })
+                };
+                self.from_kind(kind)
             }
         })
     }
@@ -148,7 +179,7 @@ mod tests {
 
     #[test]
     fn simple_example() {
-        let source = "f x y + f x y * f x y + f x y";
+        let source = "(f x y + f x y) * (f x y + f x y)";
         let tokens = Cursor::new(source).collect::<Vec<Token>>();
         let mut powers = FxHashMap::default();
         let arena_0 = Bump::new();
