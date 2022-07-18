@@ -80,6 +80,14 @@ where
     pub fn expression_with_power(&mut self, minimum_power: u8) -> Option<Expression<'a>> {
         let mut accumulator = self.advance()?;
         loop {
+            if let Some(Token {
+                kind: TokenK::CloseDelimiter(_),
+                ..
+            }) = self.tokens.peek()
+            {
+                break;
+            }
+
             if let Some(&Token {
                 begin,
                 end,
@@ -100,24 +108,9 @@ where
                 continue;
             };
 
-            if let Some(Token {
-                kind: TokenK::CloseDelimiter(_),
-                ..
-            }) = self.tokens.peek()
-            {
-                break;
-            }
-
             if let Some(_) = self.tokens.peek() {
                 let argument = self.advance()?;
                 accumulator = self.from_kind(ExpressionK::Application(accumulator, argument));
-                if let Some(Token {
-                    kind: TokenK::CloseDelimiter(_),
-                    ..
-                }) = self.tokens.peek()
-                {
-                    break;
-                }
                 continue;
             };
 
