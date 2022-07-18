@@ -38,7 +38,7 @@ impl<T> PartialEq for Interned<'_, T> {
 
 impl<T> Clone for Interned<'_, T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone(), private::Zst)
+        Self(<&T>::clone(&self.0), private::Zst)
     }
 }
 
