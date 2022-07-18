@@ -1,3 +1,5 @@
+pub mod expression;
+
 use peekmore::{PeekMore, PeekMoreIterator};
 use thiserror::Error;
 
@@ -7,9 +9,15 @@ use crate::lexer::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 pub struct Header(pub Token, pub Token);
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum Rhs<T> {
+    Deferred(Vec<Token>),
+    Done(T),
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum Declaration {
-    Type(Domain, Token, Token, Vec<Token>),
-    Value(Token, Vec<Token>, Token, Vec<Token>),
+    Type(Domain, Token, Token, Rhs<Type>),
+    Value(Token, Vec<Token>, Token, Rhs<Value>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -17,6 +25,12 @@ pub enum Domain {
     Type,
     Value,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Type {}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Value {}
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum ParserErr {
@@ -135,7 +149,7 @@ where
                 if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
                     let colon = self.advance()?;
                     self.collect_prefixes();
-                    let typ = self.collect_until_separator(0);
+                    let typ = Rhs::Deferred(self.collect_until_separator(0));
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Ok(Declaration::Type(Domain::Value, identifier, colon, typ));
                 }
@@ -153,7 +167,7 @@ where
                 if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
                     let operator = self.advance()?;
                     self.collect_prefixes();
-                    let value = self.collect_until_separator(0);
+                    let value = Rhs::Deferred(self.collect_until_separator(0));
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Ok(Declaration::Value(identifier, binders, operator, value));
                 }
@@ -167,7 +181,7 @@ where
                 if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
                     let colon = self.advance()?;
                     self.collect_prefixes();
-                    let typ = self.collect_until_separator(0);
+                    let typ = Rhs::Deferred(self.collect_until_separator(0));
                     self.expect(TokenK::Layout(LayoutK::Separator(0)))?;
                     return Ok(Declaration::Type(Domain::Type, identifier, colon, typ));
                 }
@@ -229,7 +243,7 @@ mod tests {
             cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK},
             lex_non_empty,
         },
-        parser::{Declaration, Domain, Header, Parser},
+        parser::{Declaration, Domain, Header, Parser, Rhs},
     };
 
     #[test]
@@ -277,7 +291,7 @@ Type : do
                     end: 7,
                     kind: TokenK::Operator(OperatorK::Colon)
                 },
-                vec![
+                Rhs::Deferred(vec![
                     Token {
                         begin: 8,
                         end: 10,
@@ -318,7 +332,7 @@ Type : do
                         end: 26,
                         kind: TokenK::Layout(LayoutK::End)
                     }
-                ]
+                ])
             ))
         );
     }
@@ -330,7 +344,9 @@ main : Effect Unit
 main & Effect Unit
 main : Effect Unit
 ";
-        let mut parser = Parser::new(crate::lexer::lex_non_empty(source));
+        let mut parser = Parser::new(
+            crate::lexer::lex_non_empty(source).filter(|token| !matches!(token.kind, TokenK::Eof)),
+        );
         let mut declarations = parser.declarations().into_iter();
         assert!(declarations.next().unwrap().is_ok());
         assert!(declarations.next().unwrap().is_err());
