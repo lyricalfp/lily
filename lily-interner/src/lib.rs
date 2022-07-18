@@ -143,29 +143,29 @@ impl Hash for InternedString<'_> {
 
 #[derive(Debug)]
 pub struct StringInterner<'a> {
-    map: FxHashMap<&'a str, usize>,
-    vec: Vec<&'a str>,
+    indices: FxHashMap<&'a str, usize>,
+    entries: Vec<&'a str>,
     arena: &'a Bump,
 }
 
 impl<'a> StringInterner<'a> {
     pub fn new(arena: &'a Bump) -> Self {
         Self {
-            map: FxHashMap::default(),
-            vec: Vec::default(),
+            indices: FxHashMap::default(),
+            entries: Vec::default(),
             arena,
         }
     }
 
     pub fn intern(&mut self, value: &'a str) -> InternedString<'a> {
-        if let Some(&index) = self.map.get(&value) {
-            InternedString::new(self.vec[index])
+        if let Some(&index) = self.indices.get(&value) {
+            InternedString::new(self.entries[index])
         } else {
             let value = self.arena.alloc_str(value);
-            let index = self.vec.len();
+            let index = self.entries.len();
 
-            self.map.insert(value, index);
-            self.vec.push(value);
+            self.indices.insert(value, index);
+            self.entries.push(value);
 
             InternedString::new(value)
         }
