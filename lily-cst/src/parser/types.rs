@@ -21,25 +21,11 @@ pub type InternedExpressionK<'a> = Interned<'a, ExpressionK<'a>>;
 
 pub type ExpressionKInterner<'a> = Interner<'a, ExpressionK<'a>>;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Expression<'a> {
-    // pub begin: usize,
-    // pub end: usize,
+    pub begin: usize,
+    pub end: usize,
     pub kind: InternedExpressionK<'a>,
-}
-
-impl<'a> PartialEq for Expression<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-    }
-}
-
-impl<'a> Eq for Expression<'a> {}
-
-impl<'a> Hash for Expression<'a> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.kind.hash(state);
-    }
 }
 
 impl<'a> Display for Expression<'a> {

@@ -72,8 +72,15 @@ where
     }
 
     #[inline]
-    pub fn intern_kind(&mut self, kind: ExpressionK<'a>) -> Expression<'a> {
+    pub fn intern_kind(
+        &mut self,
+        begin: usize,
+        end: usize,
+        kind: ExpressionK<'a>,
+    ) -> Expression<'a> {
         Expression {
+            begin,
+            end,
             kind: self.expressions.intern(kind),
         }
     }
@@ -86,24 +93,34 @@ where
     pub fn atom(&mut self) -> Result<Expression<'a>, ParserErr<'a>> {
         let token @ Token { begin, end, kind } = self.take()?;
 
-        let kind = match kind {
-            TokenK::Digit(DigitK::Float) => Ok(ExpressionK::Float(self.intern_source(begin, end))),
-            TokenK::Digit(DigitK::Int) => Ok(ExpressionK::Int(self.intern_source(begin, end))),
-            TokenK::Identifier(IdentifierK::Lower) => {
-                Ok(ExpressionK::Variable(self.intern_source(begin, end)))
+        let (begin, end, kind) = match kind {
+            TokenK::Digit(DigitK::Float) => Ok((
+                begin,
+                end,
+                ExpressionK::Float(self.intern_source(begin, end)),
+            )),
+            TokenK::Digit(DigitK::Int) => {
+                Ok((begin, end, ExpressionK::Int(self.intern_source(begin, end))))
             }
-            TokenK::Identifier(IdentifierK::Upper) => {
-                Ok(ExpressionK::Constructor(self.intern_source(begin, end)))
-            }
+            TokenK::Identifier(IdentifierK::Lower) => Ok((
+                begin,
+                end,
+                ExpressionK::Variable(self.intern_source(begin, end)),
+            )),
+            TokenK::Identifier(IdentifierK::Upper) => Ok((
+                begin,
+                end,
+                ExpressionK::Constructor(self.intern_source(begin, end)),
+            )),
             TokenK::OpenDelimiter(DelimiterK::Round) => {
                 let expression = self.expression()?;
-                self.expect(TokenK::CloseDelimiter(DelimiterK::Round))?;
-                Ok(ExpressionK::Parenthesized(expression))
+                let closing = self.expect(TokenK::CloseDelimiter(DelimiterK::Round))?;
+                Ok((begin, closing.end, ExpressionK::Parenthesized(expression)))
             }
             _ => Err(ParserErr::UnexpectedToken(token)),
         }?;
 
-        Ok(self.intern_kind(kind))
+        Ok(self.intern_kind(begin, end, kind))
     }
 
     #[inline]
@@ -140,14 +157,21 @@ where
                     Token { begin, end, .. } => self.intern_source(begin, end),
                 };
                 let argument = self.expression_with(right_power)?;
-                accumulator =
-                    self.intern_kind(ExpressionK::BinaryOperator(accumulator, operator, argument));
+                accumulator = self.intern_kind(
+                    accumulator.begin,
+                    argument.end,
+                    ExpressionK::BinaryOperator(accumulator, operator, argument),
+                );
                 continue;
             }
 
             if let Ok(_) = self.peek() {
                 let argument = self.atom()?;
-                accumulator = self.intern_kind(ExpressionK::Application(accumulator, argument));
+                accumulator = self.intern_kind(
+                    accumulator.begin,
+                    argument.end,
+                    ExpressionK::Application(accumulator, argument),
+                );
                 continue;
             }
 
