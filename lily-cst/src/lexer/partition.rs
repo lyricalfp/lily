@@ -91,7 +91,7 @@ pub fn join(
             } else {
                 j.next()
             }
-        },
+        }
 
         (Some(_), None, None) => i.next(),
         (None, Some(_), None) => j.next(),

@@ -30,10 +30,7 @@ impl<'a> Lines<'a> {
             }
         }
 
-        Position {
-            line,
-            column,
-        }
+        Position { line, column }
     }
 
     pub fn eof_offset(&self) -> usize {
