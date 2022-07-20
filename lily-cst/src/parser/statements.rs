@@ -8,18 +8,13 @@ use super::{
     types::{Binder, BinderK, ParserErr, Rhs, Statement, StatementK},
 };
 
-pub enum ModeK<'a> {
-    TopLevel,
-    ExprLevel(&'a PowerMap<'a>),
-}
-
 pub struct Statements<'a, I>
 where
     I: Iterator<Item = Token>,
 {
     source: &'a str,
     tokens: Peekable<I>,
-    mode: ModeK<'a>,
+    powers: Option<&'a PowerMap<'a>>,
     interner: &'a mut Interner<'a>,
 }
 
@@ -31,7 +26,7 @@ where
         Self {
             source,
             tokens: tokens.peekable(),
-            mode: ModeK::TopLevel,
+            powers: None,
             interner,
         }
     }
@@ -45,7 +40,7 @@ where
         Self {
             source,
             tokens: tokens.peekable(),
-            mode: ModeK::ExprLevel(powers),
+            powers: Some(powers),
             interner,
         }
     }
@@ -140,8 +135,8 @@ where
             let binders = self.binders()?;
             if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
                 self.take()?;
-                match self.mode {
-                    ModeK::TopLevel => {
+                match self.powers {
+                    None => {
                         let tokens = self.tokens(0);
                         let Token { end, .. } = self.take()?;
                         return Ok(Statement {
@@ -150,7 +145,7 @@ where
                             kind: StatementK::Value(identifier, binders, Rhs::Deferred(tokens)),
                         });
                     }
-                    ModeK::ExprLevel(powers) => {
+                    Some(powers) => {
                         let tokens = self
                             .tokens(0)
                             .into_iter()
