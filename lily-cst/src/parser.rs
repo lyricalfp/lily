@@ -1,3 +1,4 @@
+pub mod arena;
 pub mod pratt;
 pub mod types;
 

@@ -1,11 +1,13 @@
 use std::iter::Peekable;
 
-use lily_interner::{InternedString, StringInterner};
 use rustc_hash::FxHashMap;
 
 use crate::lexer::cursor::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK};
 
-use super::types::{Expression, ExpressionK, ExpressionKInterner, ParserErr};
+use super::{
+    arena::{Interner, Symbol},
+    types::{Expression, ExpressionK, ParserErr},
+};
 
 type PowerMap<'a> = FxHashMap<&'a str, (u8, u8)>;
 
@@ -16,8 +18,7 @@ where
     source: &'a str,
     tokens: Peekable<I>,
     powers: PowerMap<'a>,
-    expressions: ExpressionKInterner<'a>,
-    strings: StringInterner<'a>,
+    interner: &'a mut Interner<'a>,
 }
 
 impl<'a, I> Pratt<'a, I>
@@ -28,20 +29,14 @@ where
         source: &'a str,
         tokens: Peekable<I>,
         powers: PowerMap<'a>,
-        expressions: ExpressionKInterner<'a>,
-        strings: StringInterner<'a>,
+        interner: &'a mut Interner<'a>,
     ) -> Self {
         Self {
             source,
             tokens,
             powers,
-            expressions,
-            strings,
+            interner,
         }
-    }
-
-    pub fn reclaim(self) -> (ExpressionKInterner<'a>, StringInterner<'a>) {
-        (self.expressions, self.strings)
     }
 
     pub fn peek(&mut self) -> Result<&Token, ParserErr<'a>> {
@@ -67,8 +62,8 @@ where
     I: Iterator<Item = Token>,
 {
     #[inline]
-    pub fn intern_source(&mut self, begin: usize, end: usize) -> InternedString<'a> {
-        self.strings.intern(&self.source[begin..end])
+    pub fn intern_source(&mut self, begin: usize, end: usize) -> Symbol<'a> {
+        self.interner.intern_string(&self.source[begin..end])
     }
 
     #[inline]
@@ -81,7 +76,7 @@ where
         Expression {
             begin,
             end,
-            kind: self.expressions.intern(kind),
+            kind: self.interner.intern_expression(kind),
         }
     }
 }
@@ -183,11 +178,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use bumpalo::Bump;
-    use lily_interner::{Interner, StringInterner};
     use rustc_hash::FxHashMap;
 
-    use crate::lexer::cursor::{Cursor, TokenK};
+    use crate::{
+        lexer::cursor::{Cursor, TokenK},
+        parser::arena::{Coliseum, Interner},
+    };
 
     use super::Pratt;
 
@@ -196,10 +192,8 @@ mod tests {
         let source = "(f x y + f x y) * (f x y + f x y)";
         let tokens = Cursor::new(source);
         let mut powers = FxHashMap::default();
-        let arena_0 = Bump::new();
-        let arena_1 = Bump::new();
-        let interner = Interner::new(&arena_0);
-        let strings = StringInterner::new(&arena_1);
+        let coliseum = Coliseum::default();
+        let mut interner = Interner::new(&coliseum);
         powers.insert("+", (1, 2));
         powers.insert("-", (1, 2));
         powers.insert("*", (3, 4));
@@ -211,18 +205,10 @@ mod tests {
                 .filter(|token| !matches!(token.kind, TokenK::Whitespace))
                 .peekable(),
             powers,
-            interner,
-            strings,
+            &mut interner,
         );
         let result = expression.expression().unwrap();
         assert_eq!(format!("{}", result), source);
-        println!(
-            "Allocated {} bytes on expressions",
-            arena_0.allocated_bytes()
-        );
-        println!(
-            "Allocated {} bytes on string slices",
-            arena_1.allocated_bytes()
-        );
+        println!("Allocated {} bytes in total", coliseum.allocated_bytes());
     }
 }

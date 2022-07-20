@@ -1,25 +1,23 @@
 use std::{fmt::Display, hash::Hash};
 
-use lily_interner::{Interned, InternedString, Interner};
-
 use thiserror::Error;
 
 use crate::lexer::cursor::Token;
 
+use super::arena::{Interned, Symbol};
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ExpressionK<'a> {
     Application(Expression<'a>, Expression<'a>),
-    BinaryOperator(Expression<'a>, InternedString<'a>, Expression<'a>),
-    Constructor(InternedString<'a>),
-    Float(InternedString<'a>),
-    Int(InternedString<'a>),
-    Variable(InternedString<'a>),
+    BinaryOperator(Expression<'a>, Symbol<'a>, Expression<'a>),
+    Constructor(Symbol<'a>),
+    Float(Symbol<'a>),
+    Int(Symbol<'a>),
+    Variable(Symbol<'a>),
     Parenthesized(Expression<'a>),
 }
 
 pub type InternedExpressionK<'a> = Interned<'a, ExpressionK<'a>>;
-
-pub type ExpressionKInterner<'a> = Interner<'a, ExpressionK<'a>>;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Expression<'a> {
