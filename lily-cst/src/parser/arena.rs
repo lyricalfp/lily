@@ -1,7 +1,6 @@
 use std::{
     fmt::{Debug, Display},
     hash::Hash,
-    marker::PhantomData,
     ops::Deref,
 };
 
@@ -16,15 +15,14 @@ mod private {
 }
 
 #[derive(Default)]
-pub struct Coliseum<'a> {
+pub struct Coliseum {
     expressions: Bump,
     strings: Bump,
-    marker: PhantomData<&'a ()>,
 }
 
-impl<'a> Coliseum<'a> {
+impl Coliseum {
     #[inline]
-    pub fn alloc_expression(&self, value: ExpressionK<'a>) -> &ExpressionK<'a> {
+    pub fn alloc_expression<'a>(&self, value: ExpressionK<'a>) -> &ExpressionK<'a> {
         self.expressions.alloc(value)
     }
 
@@ -40,13 +38,13 @@ impl<'a> Coliseum<'a> {
 }
 
 pub struct Interner<'a> {
-    coliseum: &'a Coliseum<'a>,
+    coliseum: &'a Coliseum,
     expressions: FxHashSet<&'a ExpressionK<'a>>,
     strings: FxHashSet<&'a str>,
 }
 
 impl<'a> Interner<'a> {
-    pub fn new(coliseum: &'a Coliseum<'a>) -> Self {
+    pub fn new(coliseum: &'a Coliseum) -> Self {
         Self {
             coliseum,
             expressions: FxHashSet::default(),
