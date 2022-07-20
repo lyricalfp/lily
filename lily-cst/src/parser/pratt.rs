@@ -153,9 +153,8 @@ where
                 if left_power < minimum_power {
                     break;
                 }
-                let operator = match self.take()? {
-                    Token { begin, end, .. } => self.intern_source(begin, end),
-                };
+                let Token { begin, end, .. } = self.take()?;
+                let operator = self.intern_source(begin, end);
                 let argument = self.expression_with(right_power)?;
                 accumulator = self.intern_kind(
                     accumulator.begin,
@@ -165,7 +164,7 @@ where
                 continue;
             }
 
-            if let Ok(_) = self.peek() {
+            if self.peek().is_ok() {
                 let argument = self.atom()?;
                 accumulator = self.intern_kind(
                     accumulator.begin,
@@ -188,14 +187,14 @@ mod tests {
     use lily_interner::{Interner, StringInterner};
     use rustc_hash::FxHashMap;
 
-    use crate::lexer::cursor::{Cursor, Token, TokenK};
+    use crate::lexer::cursor::{Cursor, TokenK};
 
     use super::Pratt;
 
     #[test]
     fn simple_example() {
         let source = "(f x y + f x y) * (f x y + f x y)";
-        let tokens = Cursor::new(source).collect::<Vec<Token>>();
+        let tokens = Cursor::new(source);
         let mut powers = FxHashMap::default();
         let arena_0 = Bump::new();
         let arena_1 = Bump::new();
