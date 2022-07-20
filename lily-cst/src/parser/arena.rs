@@ -148,7 +148,7 @@ impl<'a> Display for Symbol<'a> {
 
 impl<'a> Clone for Symbol<'a> {
     fn clone(&self) -> Self {
-        Self(self.0.clone(), private::Zst)
+        Self(<&str>::clone(&self.0), private::Zst)
     }
 }
 

@@ -17,13 +17,11 @@ pub enum ExpressionK<'a> {
     Parenthesized(Expression<'a>),
 }
 
-pub type InternedExpressionK<'a> = Interned<'a, ExpressionK<'a>>;
-
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Expression<'a> {
     pub begin: usize,
     pub end: usize,
-    pub kind: InternedExpressionK<'a>,
+    pub kind: Interned<'a, ExpressionK<'a>>,
 }
 
 impl<'a> Display for Expression<'a> {
