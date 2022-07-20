@@ -47,3 +47,34 @@ pub enum ParserErr<'a> {
     #[error("unknown operator")]
     UnknownOperator(&'a str),
 }
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum BinderK<'a> {
+    NullBinder,
+    VariableBinder(Symbol<'a>),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Binder<'a> {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: BinderK<'a>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum Rhs<T> {
+    Deferred(Vec<Token>),
+    Done(T),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum StatementK<'a> {
+    Value(Symbol<'a>, Vec<Binder<'a>>, Rhs<Expression<'a>>),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Statement<'a> {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: StatementK<'a>,
+}

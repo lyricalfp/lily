@@ -2,13 +2,13 @@ use std::str::Chars;
 
 use unicode_categories::UnicodeCategories;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CommentK {
     Block,
     Line,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IdentifierK {
     Ado,
     Case,
@@ -24,14 +24,14 @@ pub enum IdentifierK {
     Upper,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DelimiterK {
     Round,
     Square,
     Brace,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OperatorK {
     ArrowLeft,
     ArrowRight,
@@ -49,27 +49,27 @@ pub enum OperatorK {
     Underscore,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DigitK {
     Float,
     Int,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UnknownK {
     UnfinishedComment,
     UnfinishedFloat,
     UnknownToken,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LayoutK {
     Begin,
     End,
     Separator(usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenK {
     CloseDelimiter(DelimiterK),
     Comment(CommentK),
@@ -83,7 +83,7 @@ pub enum TokenK {
     Eof,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Token {
     pub begin: usize,
     pub end: usize,

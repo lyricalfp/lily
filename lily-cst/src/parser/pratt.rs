@@ -9,7 +9,7 @@ use super::{
     types::{Expression, ExpressionK, ParserErr},
 };
 
-type PowerMap<'a> = FxHashMap<&'a str, (u8, u8)>;
+pub type PowerMap<'a> = FxHashMap<&'a str, (u8, u8)>;
 
 pub struct Pratt<'a, I>
 where
@@ -17,7 +17,7 @@ where
 {
     source: &'a str,
     tokens: Peekable<I>,
-    powers: PowerMap<'a>,
+    powers: &'a PowerMap<'a>,
     interner: &'a mut Interner<'a>,
 }
 
@@ -27,13 +27,13 @@ where
 {
     pub fn new(
         source: &'a str,
-        tokens: Peekable<I>,
-        powers: PowerMap<'a>,
+        tokens: I,
+        powers: &'a PowerMap<'a>,
         interner: &'a mut Interner<'a>,
     ) -> Self {
         Self {
             source,
-            tokens,
+            tokens: tokens.peekable(),
             powers,
             interner,
         }
@@ -202,9 +202,8 @@ mod tests {
             source,
             tokens
                 .into_iter()
-                .filter(|token| !matches!(token.kind, TokenK::Whitespace))
-                .peekable(),
-            powers,
+                .filter(|token| !matches!(token.kind, TokenK::Whitespace)),
+            &powers,
             &mut interner,
         );
         let result = expression.expression().unwrap();

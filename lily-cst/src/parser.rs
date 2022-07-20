@@ -1,5 +1,6 @@
 pub mod arena;
 pub mod pratt;
+pub mod statements;
 pub mod types;
 
 use peekmore::{PeekMore, PeekMoreIterator};
