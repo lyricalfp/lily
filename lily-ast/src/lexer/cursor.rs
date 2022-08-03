@@ -310,7 +310,7 @@ impl<'a> Cursor<'a> {
             _ => TokenK::Unknown(UnknownK::UnknownToken),
         };
         let end = self.consumed();
-        let depth = 1;
+        let depth = 0;
         Token {
             begin,
             end,
@@ -350,19 +350,19 @@ mod tests {
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
-                depth: 1,
+                depth: 0,
             },
             Token {
                 begin: 1,
                 end: 3,
                 kind: TokenK::Operator(OperatorK::Source),
-                depth: 1,
+                depth: 0,
             },
             Token {
                 begin: 3,
                 end: 4,
                 kind: TokenK::Digit(DigitK::Int),
-                depth: 1,
+                depth: 0,
             },
         ];
         assert_eq!(cursor.collect::<Vec<_>>(), expected);
@@ -377,19 +377,19 @@ mod tests {
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
-                depth: 1,
+                depth: 0,
             },
             Token {
                 begin: 1,
                 end: 10,
                 kind: TokenK::Comment(CommentK::Block),
-                depth: 1,
+                depth: 0,
             },
             Token {
                 begin: 10,
                 end: 11,
                 kind: TokenK::Digit(DigitK::Int),
-                depth: 1,
+                depth: 0,
             },
         ];
         assert_eq!(cursor.collect::<Vec<_>>(), expected);
@@ -405,7 +405,7 @@ mod tests {
                 begin: 0,
                 end: 2,
                 kind: TokenK::Identifier(IdentifierK::Lower),
-                depth: 1,
+                depth: 0,
             })
         )
     }

@@ -65,7 +65,7 @@ struct LayoutEngine {
 impl LayoutEngine {
     fn new(initial_position: Position) -> Self {
         let delimiters = vec![(initial_position, DelimiterK::MaskRoot)];
-        let depth = 1;
+        let depth = 0;
         Self { delimiters, depth }
     }
 
