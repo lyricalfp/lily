@@ -1,9 +1,29 @@
+//! Implements off-side rules.
+//!
+//! This module handles the insertion of [`LayoutK`] tokens into the
+//! token stream, and in effect, allows the parser to be implemented
+//! in terms of a context-free grammar. Likewise, this also adjusts
+//! the [`depth`] field of each [`Token`], which is also used further
+//! by the parser to disambiguate boundaries between declarations and
+//! expressions.
+//!
+//! Since most of the implementation is specific to `lily`, only the
+//! top-level [`with_layout`] function is exposed.
+//!
+//! # Basic Usage
+//!
+//! ```rust
+//! use lily_ast::lexer::cursor::tokenize;
+//! use lily_ast::lexer::layout::with_layout;
+//!
+//! let source = "a = 0\nb = 0";
+//! let tokens = with_layout(source, tokenize(source));
+//! ```
+//!
+//! [`depth`]: Token::depth
 use crate::lexer::cursor::{IdentifierK, OperatorK, TokenK};
 
-use super::{
-    cursor::{LayoutK, Token},
-    lines::{Lines, Position},
-};
+use super::cursor::{LayoutK, Token};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DelimiterK {
@@ -29,6 +49,12 @@ impl DelimiterK {
             KwAdo | KwDo | KwLetExpr | KwLetStmt | KwOf | MaskRoot | MaskTop
         )
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Position {
+    pub line: usize,
+    pub column: usize,
 }
 
 struct LayoutEngine {
@@ -328,14 +354,35 @@ impl LayoutEngine {
     }
 }
 
-pub fn insert_layout(lines: Lines, tokens: Vec<Token>) -> Vec<Token> {
+/// Inserts layout rules to a stream of tokens by consuming it and
+/// constructing a new one.
+pub fn with_layout(source: &str, tokens: Vec<Token>) -> Vec<Token> {
     if tokens.is_empty() {
         return tokens;
     }
 
+    let get_position = |offset| {
+        let mut line = 1;
+        let mut column = 1;
+
+        for (current, character) in source.chars().enumerate() {
+            if current == offset {
+                break;
+            }
+            if character == '\n' {
+                column = 1;
+                line += 1
+            } else {
+                column += 1;
+            }
+        }
+
+        Position { line, column }
+    };
+
     let initial_position =
         if let Some(initial_token) = tokens.iter().find(|token| token.is_syntax()) {
-            lines.get_position(initial_token.begin)
+            get_position(initial_token.begin)
         } else {
             return tokens;
         };
@@ -355,12 +402,12 @@ pub fn insert_layout(lines: Lines, tokens: Vec<Token>) -> Vec<Token> {
         layout_engine.add_layout(
             &mut annotated_tokens,
             *token,
-            lines.get_position(token.begin),
-            lines.get_position(next_begin),
+            get_position(token.begin),
+            get_position(next_begin),
         );
     }
 
-    layout_engine.finalize_layout(&mut annotated_tokens, lines.eof_offset());
+    layout_engine.finalize_layout(&mut annotated_tokens, source.len());
 
     annotated_tokens
 }
