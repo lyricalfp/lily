@@ -18,7 +18,6 @@ pub enum IdentifierK {
     In,
     Let,
     Lower,
-    Module,
     Of,
     Then,
     Upper,
@@ -66,7 +65,7 @@ pub enum UnknownK {
 pub enum LayoutK {
     Begin,
     End,
-    Separator(usize),
+    Separator,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -80,7 +79,19 @@ pub enum TokenK {
     Operator(OperatorK),
     Unknown(UnknownK),
     Whitespace,
-    Eof,
+}
+
+impl TokenK {
+    pub fn is_annotation(&self) -> bool {
+        matches!(
+            self,
+            TokenK::Comment(_) | TokenK::Layout(_) | TokenK::Whitespace
+        )
+    }
+
+    pub fn is_syntax(&self) -> bool {
+        !self.is_annotation()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -88,10 +99,25 @@ pub struct Token {
     pub begin: usize,
     pub end: usize,
     pub kind: TokenK,
+    pub depth: usize,
+}
+
+impl Token {
+    pub fn is_annotation(&self) -> bool {
+        self.kind.is_annotation()
+    }
+
+    pub fn is_syntax(&self) -> bool {
+        self.kind.is_syntax()
+    }
+
+    pub fn with_depth(&self, depth: usize) -> Self {
+        Self { depth, ..*self }
+    }
 }
 
 #[derive(Debug, Clone)]
-pub struct Cursor<'a> {
+struct Cursor<'a> {
     length: usize,
     source: &'a str,
     chars: Chars<'a>,
@@ -100,7 +126,7 @@ pub struct Cursor<'a> {
 const EOF_CHAR: char = '\0';
 
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str) -> Self {
+    fn new(source: &'a str) -> Self {
         Self {
             length: source.len(),
             source,
@@ -184,7 +210,6 @@ impl<'a> Cursor<'a> {
                     "if" => IdentifierK::If,
                     "in" => IdentifierK::In,
                     "let" => IdentifierK::Let,
-                    "module" => IdentifierK::Module,
                     "of" => IdentifierK::Of,
                     "then" => IdentifierK::Then,
                     _ => IdentifierK::Lower,
@@ -243,7 +268,13 @@ impl<'a> Cursor<'a> {
             _ => TokenK::Unknown(UnknownK::UnknownToken),
         };
         let end = self.consumed();
-        Token { begin, end, kind }
+        let depth = 1;
+        Token {
+            begin,
+            end,
+            kind,
+            depth,
+        }
     }
 }
 
@@ -259,6 +290,10 @@ impl<'a> Iterator for Cursor<'a> {
     }
 }
 
+pub fn tokenize(source: &str) -> Vec<Token> {
+    Cursor::new(source).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{CommentK, Cursor, DigitK, IdentifierK, OperatorK, Token, TokenK};
@@ -272,16 +307,19 @@ mod tests {
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
+                depth: 1,
             },
             Token {
                 begin: 1,
                 end: 3,
                 kind: TokenK::Operator(OperatorK::Source),
+                depth: 1,
             },
             Token {
                 begin: 3,
                 end: 4,
                 kind: TokenK::Digit(DigitK::Int),
+                depth: 1,
             },
         ];
         assert_eq!(cursor.collect::<Vec<_>>(), expected);
@@ -296,16 +334,19 @@ mod tests {
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
+                depth: 1,
             },
             Token {
                 begin: 1,
                 end: 10,
                 kind: TokenK::Comment(CommentK::Block),
+                depth: 1,
             },
             Token {
                 begin: 10,
                 end: 11,
                 kind: TokenK::Digit(DigitK::Int),
+                depth: 1,
             },
         ];
         assert_eq!(cursor.collect::<Vec<_>>(), expected);
@@ -321,6 +362,7 @@ mod tests {
                 begin: 0,
                 end: 2,
                 kind: TokenK::Identifier(IdentifierK::Lower),
+                depth: 1,
             })
         )
     }

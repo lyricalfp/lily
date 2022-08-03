@@ -1,15 +1,11 @@
 [package]
-name = "lily-cst"
-version = "0.1.0"
+name = "lily-ast"
+version = "0.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bumpalo = "3.10.0"
-peekmore = "1.0.0"
-rustc-hash = "1.1.0"
-thiserror = "1.0.31"
 unicode_categories = "0.1.1"
 
 [dev-dependencies]

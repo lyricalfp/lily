@@ -1,44 +1,25 @@
-pub mod cursor;
-pub mod layout;
-pub mod partition;
-
 use self::{
-    cursor::{Cursor, Token},
-    layout::Layout,
+    cursor::{tokenize, Token},
+    layout::insert_layout,
+    lines::Lines,
 };
 
-use crate::{error::CstErr, lines::Lines};
+pub mod cursor;
+pub mod layout;
+pub mod lines;
 
-pub fn lex(source: &str) -> Result<impl Iterator<Item = Token> + '_, CstErr> {
-    if source.is_empty() {
-        Err(CstErr::EmptySourceFile)
-    } else {
-        Ok(lex_non_empty(source))
-    }
-}
-
-pub fn lex_non_empty(source: &str) -> impl Iterator<Item = Token> + '_ {
-    assert!(!source.is_empty());
-    let cursor = Cursor::new(source);
-    let lines = Lines::new(source);
-    let (tokens, significant, annotations) = partition::split(cursor);
-    let with_layout = Layout::new(lines, significant).iter();
-    partition::join(lines, tokens, with_layout, annotations)
+pub fn lex(source: &str) -> Vec<Token> {
+    insert_layout(Lines::new(source), tokenize(source))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::{
-        cursor::{LayoutK, TokenK},
-        lex_non_empty,
-    };
+    use crate::lexer::cursor::{LayoutK, TokenK};
     use pretty_assertions::assert_eq;
 
-    use super::cursor::{IdentifierK, Token};
+    use super::lex;
 
-    const SOURCE: &str = r"module Main
-
-Identity : Type -> Type
+    const SOURCE: &str = r"Identity : Type -> Type
 Identity a ?
   _ : a -> Identity a
 
@@ -132,7 +113,7 @@ adoLet = do
 
     #[test]
     fn ascending_position() {
-        let tokens = lex_non_empty(SOURCE).collect::<Vec<_>>();
+        let tokens = lex(SOURCE);
         for window in tokens.windows(2) {
             assert!(window[0].begin <= window[1].begin);
             assert!(window[0].end <= window[1].end);
@@ -142,9 +123,7 @@ adoLet = do
     #[test]
     fn basic_layout_test() {
         let mut actual = String::new();
-        let expected = r"module Main;
-
-Identity : Type -> Type;
+        let expected = r"Identity : Type -> Type;
 Identity a ?{
   _ : a -> Identity a};
 
@@ -234,60 +213,29 @@ adoLet = do{
     y : Int;
     y = 1};
   logShow $ x + y};
-<eof>
 ";
 
-        for token in lex_non_empty(SOURCE) {
-            if let TokenK::Layout(layout) = token.kind {
+        let mut collected_whitespace = vec![];
+
+        for token in lex(SOURCE) {
+            if let TokenK::Whitespace = token.kind {
+                collected_whitespace.push(token);
+            } else if let TokenK::Layout(layout) = token.kind {
                 match layout {
                     LayoutK::Begin => actual.push('{'),
                     LayoutK::End => actual.push('}'),
-                    LayoutK::Separator(_) => actual.push(';'),
+                    LayoutK::Separator => actual.push(';'),
                 }
-            } else if let TokenK::Eof = token.kind {
-                actual.push_str("<eof>");
             } else {
+                while let Some(whitespace) = collected_whitespace.pop() {
+                    actual.push_str(&SOURCE[whitespace.begin..whitespace.end]);
+                }
                 actual.push_str(&SOURCE[token.begin..token.end]);
             }
         }
+
         actual.push('\n');
         print!("{}", actual);
         assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn only_module_header() {
-        let source = "module Main";
-        let tokens = lex_non_empty(source);
-        assert_eq!(
-            tokens.collect::<Vec<_>>(),
-            vec![
-                Token {
-                    begin: 0,
-                    end: 6,
-                    kind: TokenK::Identifier(IdentifierK::Module)
-                },
-                Token {
-                    begin: 6,
-                    end: 7,
-                    kind: TokenK::Whitespace,
-                },
-                Token {
-                    begin: 7,
-                    end: 11,
-                    kind: TokenK::Identifier(IdentifierK::Upper),
-                },
-                Token {
-                    begin: 11,
-                    end: 11,
-                    kind: TokenK::Layout(LayoutK::Separator(0)),
-                },
-                Token {
-                    begin: 11,
-                    end: 11,
-                    kind: TokenK::Eof,
-                }
-            ]
-        )
     }
 }
