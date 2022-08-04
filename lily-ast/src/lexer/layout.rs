@@ -21,9 +21,7 @@
 //! ```
 //!
 //! [`depth`]: Token::depth
-use crate::lexer::cursor::{IdentifierK, OperatorK, TokenK};
-
-use super::cursor::{LayoutK, Token};
+use super::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DelimiterK {

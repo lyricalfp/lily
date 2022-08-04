@@ -22,10 +22,12 @@ pub fn lex(source: &str) -> Vec<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::cursor::{LayoutK, TokenK};
     use pretty_assertions::assert_eq;
 
-    use super::lex;
+    use super::{
+        cursor::{LayoutK, TokenK},
+        lex,
+    };
 
     const SOURCE: &str = r"Identity : Type -> Type
 Identity a ?
