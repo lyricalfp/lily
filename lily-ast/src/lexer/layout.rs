@@ -148,11 +148,17 @@ impl LayoutEngine {
             tokens.push(Token {
                 begin: current_token.begin,
                 end: current_token.begin,
+                kind: TokenK::Layout(LayoutK::Separator),
+                depth: self.depth,
+            });
+            tokens.push(Token {
+                begin: current_token.begin,
+                end: current_token.begin,
                 kind: TokenK::Layout(LayoutK::End),
                 depth: self.depth,
             });
+            self.depth = self.depth.saturating_sub(1);
         }
-        self.depth = self.depth.saturating_sub(make_n);
     }
 
     fn add_layout(
@@ -179,11 +185,17 @@ impl LayoutEngine {
                                     tokens.push(Token {
                                         begin: current_token.begin,
                                         end: current_token.begin,
+                                        kind: TokenK::Layout(LayoutK::Separator),
+                                        depth: self.depth,
+                                    });
+                                    tokens.push(Token {
+                                        begin: current_token.begin,
+                                        end: current_token.begin,
                                         kind: TokenK::Layout(LayoutK::End),
                                         depth: self.depth,
                                     });
+                                    self.depth = self.depth.saturating_sub(1);
                                 }
-                                self.depth = self.depth.saturating_sub(make_n);
                             };
                             $expression
                         }),+
@@ -312,6 +324,12 @@ impl LayoutEngine {
                     tokens.push(Token {
                         begin: current_token.begin,
                         end: current_token.begin,
+                        kind: TokenK::Layout(LayoutK::Separator),
+                        depth: self.depth,
+                    });
+                    tokens.push(Token {
+                        begin: current_token.begin,
+                        end: current_token.begin,
                         kind: TokenK::Layout(LayoutK::End),
                         depth: self.depth,
                     });
@@ -342,6 +360,12 @@ impl LayoutEngine {
                     depth: self.depth,
                 });
             } else if delimiter.is_indented() {
+                tokens.push(Token {
+                    begin: eof_offset,
+                    end: eof_offset,
+                    kind: TokenK::Layout(LayoutK::Separator),
+                    depth: self.depth,
+                });
                 tokens.push(Token {
                     begin: eof_offset,
                     end: eof_offset,
