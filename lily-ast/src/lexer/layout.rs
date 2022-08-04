@@ -69,6 +69,27 @@ impl LayoutEngine {
         Self { delimiters, depth }
     }
 
+    #[inline]
+    fn push_end(&mut self, tokens: &mut Vec<Token>, current_token: Token) {
+        let begin = current_token.begin;
+        let end = current_token.begin;
+        let depth = self.depth;
+        tokens.push(Token {
+            begin,
+            end,
+            kind: TokenK::Layout(LayoutK::Separator),
+            depth,
+        });
+        tokens.push(Token {
+            begin,
+            end,
+            kind: TokenK::Layout(LayoutK::End),
+            depth,
+        });
+        self.depth = self.depth.saturating_sub(1);
+    }
+
+    #[inline]
     fn determine_end(&self, predicate: impl Fn(&Position, &DelimiterK) -> bool) -> (usize, usize) {
         let mut take_n = self.delimiters.len();
         let mut make_n = 0;
@@ -87,6 +108,7 @@ impl LayoutEngine {
         (take_n, make_n)
     }
 
+    #[inline]
     fn add_begin(
         &mut self,
         tokens: &mut Vec<Token>,
@@ -115,6 +137,7 @@ impl LayoutEngine {
         });
     }
 
+    #[inline]
     fn add_separator(
         &mut self,
         tokens: &mut Vec<Token>,
@@ -139,28 +162,18 @@ impl LayoutEngine {
         }
     }
 
+    #[inline]
     fn add_end(&mut self, tokens: &mut Vec<Token>, current_token: Token, now_position: Position) {
         let (take_n, make_n) = self.determine_end(|position, delimiter| {
             delimiter.is_indented() && now_position.column < position.column
         });
         self.delimiters.truncate(take_n);
         for _ in 0..make_n {
-            tokens.push(Token {
-                begin: current_token.begin,
-                end: current_token.begin,
-                kind: TokenK::Layout(LayoutK::Separator),
-                depth: self.depth,
-            });
-            tokens.push(Token {
-                begin: current_token.begin,
-                end: current_token.begin,
-                kind: TokenK::Layout(LayoutK::End),
-                depth: self.depth,
-            });
-            self.depth = self.depth.saturating_sub(1);
+            self.push_end(tokens, current_token);
         }
     }
 
+    #[inline]
     fn add_layout(
         &mut self,
         tokens: &mut Vec<Token>,
@@ -182,19 +195,7 @@ impl LayoutEngine {
                             if $commit {
                                 self.delimiters.truncate(take_n);
                                 for _ in 0..make_n {
-                                    tokens.push(Token {
-                                        begin: current_token.begin,
-                                        end: current_token.begin,
-                                        kind: TokenK::Layout(LayoutK::Separator),
-                                        depth: self.depth,
-                                    });
-                                    tokens.push(Token {
-                                        begin: current_token.begin,
-                                        end: current_token.begin,
-                                        kind: TokenK::Layout(LayoutK::End),
-                                        depth: self.depth,
-                                    });
-                                    self.depth = self.depth.saturating_sub(1);
+                                    self.push_end(tokens, current_token);
                                 }
                             };
                             $expression
@@ -321,19 +322,7 @@ impl LayoutEngine {
                 },
                 true ~ [.., (_, KwAdo | KwLetExpr)] => {
                     self.delimiters.pop();
-                    tokens.push(Token {
-                        begin: current_token.begin,
-                        end: current_token.begin,
-                        kind: TokenK::Layout(LayoutK::Separator),
-                        depth: self.depth,
-                    });
-                    tokens.push(Token {
-                        begin: current_token.begin,
-                        end: current_token.begin,
-                        kind: TokenK::Layout(LayoutK::End),
-                        depth: self.depth,
-                    });
-                    self.depth = self.depth.saturating_sub(1);
+                    self.push_end(tokens, current_token);
                     tokens.push(current_token.with_depth(self.depth));
                 },
                 false ~ _ => {
