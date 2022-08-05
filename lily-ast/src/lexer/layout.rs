@@ -21,7 +21,7 @@
 //! ```
 //!
 //! [`depth`]: Token::depth
-use super::cursor::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
+use super::types::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DelimiterK {

@@ -6,14 +6,14 @@
 //! use lily_ast::lexer::lex;
 //!
 //! let tokens = lex("a = 0\nb = 0");
+//!
+//! assert_eq!(tokens.len(), 13);
 //! ```
-use self::{
-    cursor::{tokenize, Token},
-    layout::with_layout,
-};
+pub use self::{cursor::tokenize, layout::with_layout, types::Token};
 
 pub mod cursor;
 pub mod layout;
+pub mod types;
 
 /// Creates a stream of tokens from a source file.
 pub fn lex(source: &str) -> Vec<Token> {
@@ -25,8 +25,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::{
-        cursor::{LayoutK, TokenK},
         lex,
+        types::{LayoutK, TokenK},
     };
 
     const SOURCE: &str = r"Identity : Type -> Type

@@ -2,163 +2,25 @@
 //!
 //! This module handles turning source files into a stream of tokens
 //! to be consumed by the layout engine and eventually the parser.
-//! Most of the core state and logic is handled within the [`Cursor`]
-//! type, hence the module name, and a top-level [`tokenize`] function
-//! is also exposed.
 //!
 //! # Usage
 //!
 //! ```rust
-//! use lily_ast::lexer::cursor::{Cursor, tokenize};
-//!
-//! let mut cursor = Cursor::new("a b");
-//! assert!(cursor.next().is_some());
-//! assert!(cursor.next().is_some());
-//! assert!(cursor.next().is_some());
-//! assert!(cursor.next().is_none());
+//! use lily_ast::lexer::cursor::tokenize;
 //!
 //! let tokens = tokenize("a b");
+//!
 //! assert_eq!(tokens.len(), 3);
 //! ```
 use std::str::Chars;
 
 use unicode_categories::UnicodeCategories;
 
-/// The kinds of comments, either block or line.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CommentK {
-    Block,
-    Line,
-}
-
-/// The kinds of identifiers, both reserved and user-defined.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum IdentifierK {
-    Ado,
-    Case,
-    Do,
-    Else,
-    If,
-    In,
-    Let,
-    Lower,
-    Of,
-    Then,
-    Upper,
-}
-
-/// The kinds of delimiters or brackets e.g. `(`, `[`, `{`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum DelimiterK {
-    Round,
-    Square,
-    Brace,
-}
-
-/// The kinds of operators, both reserved and user-defined.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum OperatorK {
-    ArrowLeft,
-    ArrowRight,
-    Backslash,
-    Bang,
-    Colon,
-    Comma,
-    Equal,
-    GreaterThan,
-    LessThan,
-    Period,
-    Pipe,
-    Question,
-    Source,
-    Underscore,
-}
-
-/// The kinds of numbers, either float or int.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum DigitK {
-    Float,
-    Int,
-}
-
-/// The kinds of unrecognized tokens.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum UnknownK {
-    UnfinishedComment,
-    UnfinishedFloat,
-    UnknownToken,
-}
-
-/// The kinds of layout tokens, inserted by the layout engine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LayoutK {
-    Begin,
-    End,
-    Separator,
-}
-
-/// The kind of a token.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TokenK {
-    CloseDelimiter(DelimiterK),
-    Comment(CommentK),
-    Digit(DigitK),
-    Identifier(IdentifierK),
-    Layout(LayoutK),
-    OpenDelimiter(DelimiterK),
-    Operator(OperatorK),
-    Unknown(UnknownK),
-    Whitespace,
-}
-
-impl TokenK {
-    /// Returns `true` if the token is irrelevant for layout.
-    pub fn is_annotation(&self) -> bool {
-        matches!(
-            self,
-            TokenK::Comment(_) | TokenK::Layout(_) | TokenK::Whitespace
-        )
-    }
-
-    /// Returns `true` if the token is relevant for layout.
-    pub fn is_syntax(&self) -> bool {
-        !self.is_annotation()
-    }
-}
-
-/// A token produced by the lexer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Token {
-    /// The beginning byte offset.
-    pub begin: usize,
-    /// The ending byte offset.
-    pub end: usize,
-    /// The kind of the token.
-    pub kind: TokenK,
-    /// The "layout depth" of the token.
-    pub depth: usize,
-}
-
-impl Token {
-    /// Returns `true` if the token is irrelevant for layout.
-    pub fn is_annotation(&self) -> bool {
-        self.kind.is_annotation()
-    }
-
-    /// Returns `true` if the token is relevant for layout.
-    pub fn is_syntax(&self) -> bool {
-        self.kind.is_syntax()
-    }
-
-    /// Creates a new [`Token`] with a given `depth`.
-    pub fn with_depth(&self, depth: usize) -> Self {
-        Self { depth, ..*self }
-    }
-}
+use super::types::{CommentK, DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
 
 /// An iterator that yields tokens.
 #[derive(Debug, Clone)]
-pub struct Cursor<'a> {
+struct Cursor<'a> {
     length: usize,
     source: &'a str,
     chars: Chars<'a>,
