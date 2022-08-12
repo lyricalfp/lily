@@ -187,24 +187,13 @@ impl<'a> Cursor<'a> {
 
 /// Converts a source file into a stream of tokens.
 pub fn tokenize(source: &str) -> Vec<Token> {
-    if source.is_empty() {
-        vec![Token {
-            comment_begin: 0,
-            comment_end: 0,
-            begin: 0,
-            end: 0,
-            kind: TokenK::Unknown(UnknownK::EndOfFile),
-            depth: 0,
-        }]
-    } else {
-        let mut cursor = Cursor::new(source);
-        let mut tokens = vec![];
-        loop {
-            let token = cursor.take_token();
-            tokens.push(token);
-            if token.is_eof() {
-                break tokens;
-            }
+    let mut cursor = Cursor::new(source);
+    let mut tokens = vec![];
+    loop {
+        let token = cursor.take_token();
+        tokens.push(token);
+        if token.is_eof() {
+            break tokens;
         }
     }
 }
