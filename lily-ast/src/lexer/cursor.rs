@@ -167,6 +167,7 @@ impl<'a> Cursor<'a> {
                     TokenK::Digit(DigitK::Int)
                 }
             }
+            // End of file
             '\0' => TokenK::Unknown(UnknownK::EndOfFile),
             // Unknown Token
             _ => TokenK::Unknown(UnknownK::UnknownToken),
