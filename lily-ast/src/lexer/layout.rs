@@ -73,12 +73,16 @@ impl LayoutEngine {
         let end = current_token.begin;
         let depth = self.depth;
         tokens.push(Token {
+            comment_begin: begin,
+            comment_end: begin,
             begin,
             end,
             kind: TokenK::Layout(LayoutK::Separator),
             depth,
         });
         tokens.push(Token {
+            comment_begin: begin,
+            comment_end: begin,
             begin,
             end,
             kind: TokenK::Layout(LayoutK::End),
@@ -128,6 +132,8 @@ impl LayoutEngine {
         self.delimiters.push((next_position, delimiter));
         self.depth += 1;
         tokens.push(Token {
+            comment_begin: current_token.end,
+            comment_end: current_token.end,
             begin: current_token.end,
             end: current_token.end,
             kind: TokenK::Layout(LayoutK::Begin),
@@ -148,6 +154,8 @@ impl LayoutEngine {
                 && now_position.line > position.line
             {
                 tokens.push(Token {
+                    comment_begin: current_token.begin,
+                    comment_end: current_token.begin,
                     begin: current_token.begin,
                     end: current_token.begin,
                     kind: TokenK::Layout(LayoutK::Separator),
@@ -341,6 +349,8 @@ impl LayoutEngine {
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
                 tokens.push(Token {
+                    comment_begin: eof_offset,
+                    comment_end: eof_offset,
                     begin: eof_offset,
                     end: eof_offset,
                     kind: TokenK::Layout(LayoutK::Separator),
@@ -348,12 +358,16 @@ impl LayoutEngine {
                 });
             } else if delimiter.is_indented() {
                 tokens.push(Token {
+                    comment_begin: eof_offset,
+                    comment_end: eof_offset,
                     begin: eof_offset,
                     end: eof_offset,
                     kind: TokenK::Layout(LayoutK::Separator),
                     depth: self.depth,
                 });
                 tokens.push(Token {
+                    comment_begin: eof_offset,
+                    comment_end: eof_offset,
                     begin: eof_offset,
                     end: eof_offset,
                     kind: TokenK::Layout(LayoutK::End),
@@ -367,9 +381,9 @@ impl LayoutEngine {
 
 /// Inserts layout rules to a stream of tokens by consuming it and
 /// constructing a new one.
-pub fn with_layout(source: &str, tokens: Vec<Token>) -> Vec<Token> {
-    if tokens.is_empty() {
-        return tokens;
+pub fn with_layout(source: &str, input_tokens: Vec<Token>) -> Vec<Token> {
+    if input_tokens.is_empty() {
+        return input_tokens;
     }
 
     let get_position = |offset| {
@@ -391,34 +405,31 @@ pub fn with_layout(source: &str, tokens: Vec<Token>) -> Vec<Token> {
         Position { line, column }
     };
 
-    let initial_position =
-        if let Some(initial_token) = tokens.iter().find(|token| token.is_syntax()) {
-            get_position(initial_token.begin)
-        } else {
-            return tokens;
-        };
+    let initial_position = if let Some(initial_token) = input_tokens.first() {
+        get_position(initial_token.begin)
+    } else {
+        return input_tokens;
+    };
 
-    let mut annotated_tokens = vec![];
+    let mut output_tokens = vec![];
     let mut layout_engine = LayoutEngine::new(initial_position);
 
-    for (index, token) in tokens.iter().enumerate() {
-        if token.is_annotation() {
-            annotated_tokens.push(token.with_depth(layout_engine.depth));
-            continue;
-        }
-        let next_begin = match tokens[index + 1..].iter().find(|token| token.is_syntax()) {
+    for (index, &token) in input_tokens.iter().enumerate() {
+        let next_begin = match input_tokens.get(index + 1) {
             Some(next) => next.begin,
-            None => token.end,
+            None => {
+                layout_engine.finalize_layout(&mut output_tokens, source.len());
+                output_tokens.push(token);
+                break;
+            }
         };
         layout_engine.add_layout(
-            &mut annotated_tokens,
-            *token,
+            &mut output_tokens,
+            token,
             get_position(token.begin),
             get_position(next_begin),
-        );
+        )
     }
 
-    layout_engine.finalize_layout(&mut annotated_tokens, source.len());
-
-    annotated_tokens
+    output_tokens
 }

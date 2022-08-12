@@ -16,7 +16,7 @@ use std::str::Chars;
 
 use unicode_categories::UnicodeCategories;
 
-use super::types::{CommentK, DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
+use super::types::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
 
 /// An iterator that yields tokens.
 #[derive(Debug, Clone)]
@@ -56,8 +56,8 @@ impl<'a> Cursor<'a> {
         chars.next().unwrap_or(EOF_CHAR)
     }
 
-    fn take(&mut self) -> Option<char> {
-        self.chars.next()
+    fn take(&mut self) -> char {
+        self.chars.next().unwrap_or(EOF_CHAR)
     }
 
     fn take_while(&mut self, predicate: impl Fn(char) -> bool) {
@@ -69,23 +69,32 @@ impl<'a> Cursor<'a> {
 
 impl<'a> Cursor<'a> {
     fn take_token(&mut self) -> Token {
-        let begin = self.consumed();
-        let kind = match self.take().unwrap() {
-            // Block Comments
-            '{' if self.peek_1() == '-' => {
-                self.take();
-                loop {
+        let comment_begin = self.consumed();
+        loop {
+            match (self.peek_1(), self.peek_2()) {
+                ('-', '-') => {
+                    self.take_while(|c| c != '\n');
+                }
+                ('{', '-') => loop {
                     if self.is_eof() {
-                        break TokenK::Unknown(UnknownK::UnfinishedComment);
+                        break;
                     } else if self.peek_1() == '-' && self.peek_2() == '}' {
                         self.take();
                         self.take();
-                        break TokenK::Comment(CommentK::Block);
+                        break;
                     } else {
                         self.take();
                     }
+                },
+                (i, _) if i.is_whitespace() => {
+                    self.take_while(|c| c.is_whitespace());
                 }
+                _ => break,
             }
+        }
+        let comment_end = self.consumed();
+        let begin = self.consumed();
+        let kind = match self.take() {
             // Open Parentheses
             '(' => TokenK::OpenDelimiter(DelimiterK::Round),
             '[' => TokenK::OpenDelimiter(DelimiterK::Square),
@@ -97,11 +106,6 @@ impl<'a> Cursor<'a> {
             // Built-in Symbols
             ',' => TokenK::Operator(OperatorK::Comma),
             '\\' => TokenK::Operator(OperatorK::Backslash),
-            // Comment Line
-            '-' if self.peek_1() == '-' => {
-                self.take_while(|c| c != '\n');
-                TokenK::Comment(CommentK::Line)
-            }
             // Identifiers
             initial if initial.is_letter_lowercase() || initial == '_' && self.peek_1() == '_' => {
                 self.take_while(|c| c.is_letter() || c.is_number() || "'_".contains(c));
@@ -163,17 +167,15 @@ impl<'a> Cursor<'a> {
                     TokenK::Digit(DigitK::Int)
                 }
             }
-            // Whitespace
-            initial if initial.is_whitespace() => {
-                self.take_while(|c| c.is_whitespace());
-                TokenK::Whitespace
-            }
+            '\0' => TokenK::Unknown(UnknownK::EndOfFile),
             // Unknown Token
             _ => TokenK::Unknown(UnknownK::UnknownToken),
         };
         let end = self.consumed();
         let depth = 0;
         Token {
+            comment_begin,
+            comment_end,
             begin,
             end,
             kind,
@@ -182,93 +184,132 @@ impl<'a> Cursor<'a> {
     }
 }
 
-impl<'a> Iterator for Cursor<'a> {
-    type Item = Token;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.is_eof() {
-            None
-        } else {
-            Some(self.take_token())
+/// Converts a source file into a stream of tokens.
+pub fn tokenize(source: &str) -> Vec<Token> {
+    if source.is_empty() {
+        vec![Token {
+            comment_begin: 0,
+            comment_end: 0,
+            begin: 0,
+            end: 0,
+            kind: TokenK::Unknown(UnknownK::EndOfFile),
+            depth: 0,
+        }]
+    } else {
+        let mut cursor = Cursor::new(source);
+        let mut tokens = vec![];
+        loop {
+            let token = cursor.take_token();
+            tokens.push(token);
+            if token.is_eof() {
+                break tokens;
+            }
         }
     }
 }
 
-/// Converts a source file into a stream of tokens.
-pub fn tokenize(source: &str) -> Vec<Token> {
-    Cursor::new(source).collect()
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{CommentK, Cursor, DigitK, IdentifierK, OperatorK, Token, TokenK};
+    use crate::lexer::{tokenize, types::UnknownK};
+
+    use super::{DigitK, IdentifierK, OperatorK, Token, TokenK};
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn double_period_after_int() {
         let source = "1..2";
-        let cursor = Cursor::new(source);
         let expected = vec![
             Token {
+                comment_begin: 0,
+                comment_end: 0,
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
             },
             Token {
+                comment_begin: 1,
+                comment_end: 1,
                 begin: 1,
                 end: 3,
                 kind: TokenK::Operator(OperatorK::Source),
                 depth: 0,
             },
             Token {
+                comment_begin: 3,
+                comment_end: 3,
                 begin: 3,
                 end: 4,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
             },
+            Token {
+                comment_begin: 4,
+                comment_end: 4,
+                begin: 4,
+                end: 4,
+                kind: TokenK::Unknown(UnknownK::EndOfFile),
+                depth: 0,
+            },
         ];
-        assert_eq!(cursor.collect::<Vec<_>>(), expected);
+        assert_eq!(tokenize(source), expected);
     }
 
     #[test]
     fn block_comment_in_between() {
-        let source = "1{-hello-}2";
-        let cursor = Cursor::new(source);
+        let source = "1 {-hello-} 2";
         let expected = vec![
             Token {
+                comment_begin: 0,
+                comment_end: 0,
                 begin: 0,
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
             },
             Token {
-                begin: 1,
-                end: 10,
-                kind: TokenK::Comment(CommentK::Block),
-                depth: 0,
-            },
-            Token {
-                begin: 10,
-                end: 11,
+                comment_begin: 1,
+                comment_end: 12,
+                begin: 12,
+                end: 13,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
             },
+            Token {
+                comment_begin: 13,
+                comment_end: 13,
+                begin: 13,
+                end: 13,
+                kind: TokenK::Unknown(UnknownK::EndOfFile),
+                depth: 0,
+            },
         ];
-        assert_eq!(cursor.collect::<Vec<_>>(), expected);
+        assert_eq!(tokenize(source), expected);
     }
 
     #[test]
     fn underscore_disambiguation() {
         let source = "__";
-        let mut cursor = Cursor::new(source);
         assert_eq!(
-            cursor.next(),
-            Some(Token {
-                begin: 0,
-                end: 2,
-                kind: TokenK::Identifier(IdentifierK::Lower),
-                depth: 0,
-            })
+            tokenize(source),
+            [
+                Token {
+                    comment_begin: 0,
+                    comment_end: 0,
+                    begin: 0,
+                    end: 2,
+                    kind: TokenK::Identifier(IdentifierK::Lower),
+                    depth: 0,
+                },
+                Token {
+                    comment_begin: 2,
+                    comment_end: 2,
+                    begin: 2,
+                    end: 2,
+                    kind: TokenK::Unknown(UnknownK::EndOfFile),
+                    depth: 0,
+                },
+            ]
         )
     }
 }

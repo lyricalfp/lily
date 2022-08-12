@@ -63,6 +63,7 @@ pub enum UnknownK {
     UnfinishedComment,
     UnfinishedFloat,
     UnknownToken,
+    EndOfFile,
 }
 
 /// The kinds of layout tokens.
@@ -77,31 +78,21 @@ pub enum LayoutK {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenK {
     CloseDelimiter(DelimiterK),
-    Comment(CommentK),
     Digit(DigitK),
     Identifier(IdentifierK),
     Layout(LayoutK),
     OpenDelimiter(DelimiterK),
     Operator(OperatorK),
     Unknown(UnknownK),
-    Whitespace,
-}
-
-impl TokenK {
-    /// Returns `true` if the token is irrelevant for layout.
-    pub fn is_annotation(&self) -> bool {
-        matches!(self, TokenK::Comment(_) | TokenK::Whitespace)
-    }
-
-    /// Returns `true` if the token is relevant for layout.
-    pub fn is_syntax(&self) -> bool {
-        !self.is_annotation()
-    }
 }
 
 /// A token produced by the lexer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Token {
+    /// The beginning byte offset of the prefix.
+    pub comment_begin: usize,
+    /// The ending byte offset of the prefix.
+    pub comment_end: usize,
     /// The beginning byte offset.
     pub begin: usize,
     /// The ending byte offset.
@@ -113,14 +104,9 @@ pub struct Token {
 }
 
 impl Token {
-    /// Returns `true` if the token is irrelevant for layout.
-    pub fn is_annotation(&self) -> bool {
-        self.kind.is_annotation()
-    }
-
-    /// Returns `true` if the token is relevant for layout.
-    pub fn is_syntax(&self) -> bool {
-        self.kind.is_syntax()
+    /// Returns `true` if the [`Token`] is EOF.
+    pub fn is_eof(&self) -> bool {
+        matches!(self.kind, TokenK::Unknown(UnknownK::EndOfFile))
     }
 
     /// Sets a new value for a [`Token`]'s `depth` field.

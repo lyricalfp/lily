@@ -7,7 +7,7 @@
 //!
 //! let tokens = lex("a = 0\nb = 0");
 //!
-//! assert_eq!(tokens.len(), 13);
+//! assert_eq!(tokens.len(), 9);
 //! ```
 pub use self::{cursor::tokenize, layout::with_layout, types::Token};
 
@@ -225,27 +225,19 @@ adoLet = do{1
   logShow $ x + y;1}1;0
 ";
 
-        let mut collected_whitespace = vec![];
-
         for token in lex(SOURCE) {
-            if let TokenK::Whitespace = token.kind {
-                collected_whitespace.push(token);
-            } else if let TokenK::Layout(layout) = token.kind {
+            if let TokenK::Layout(layout) = token.kind {
                 match layout {
                     LayoutK::Begin => actual.push_str(format!("{{{}", token.depth).as_str()),
                     LayoutK::End => actual.push_str(format!("}}{}", token.depth).as_str()),
                     LayoutK::Separator => actual.push_str(format!(";{}", token.depth).as_str()),
                 }
             } else {
-                while let Some(whitespace) = collected_whitespace.pop() {
-                    actual.push_str(&SOURCE[whitespace.begin..whitespace.end]);
-                }
+                actual.push_str(&SOURCE[token.comment_begin..token.comment_end]);
                 actual.push_str(&SOURCE[token.begin..token.end]);
             }
         }
 
-        actual.push('\n');
-        print!("{}", actual);
         assert_eq!(actual, expected);
     }
 }
