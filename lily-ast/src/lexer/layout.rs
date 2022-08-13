@@ -382,8 +382,9 @@ impl LayoutEngine {
 /// Inserts layout rules to a stream of tokens by consuming it and
 /// constructing a new one.
 pub fn with_layout(source: &str, input_tokens: Vec<Token>) -> Vec<Token> {
-    if input_tokens.is_empty() {
-        return input_tokens;
+    match &input_tokens[..] {
+        [token] if token.is_eof() => return input_tokens,
+        _ => (),
     }
 
     let get_position = |offset| {
