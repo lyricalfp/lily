@@ -419,7 +419,7 @@ pub fn with_layout(source: &str, input_tokens: Vec<Token>) -> Vec<Token> {
             Some(next) => next.begin,
             None => {
                 layout_engine.finalize_layout(&mut output_tokens, source.len());
-                output_tokens.push(token);
+                output_tokens.push(token.with_depth(layout_engine.depth));
                 break;
             }
         };
