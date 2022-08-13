@@ -1,26 +1,3 @@
-//! Implements off-side rules.
-//!
-//! This module handles the insertion of [`LayoutK`] tokens into the
-//! token stream, and in effect, allows the parser to be implemented
-//! in terms of a context-free grammar. Likewise, this also adjusts
-//! the [`depth`] field of each [`Token`], which is also used further
-//! by the parser to disambiguate boundaries between declarations and
-//! expressions.
-//!
-//! Since most of the implementation is specific to `lily`, only the
-//! top-level [`with_layout`] function is exposed.
-//!
-//! # Basic Usage
-//!
-//! ```rust
-//! use lily_ast::lexer::cursor::tokenize;
-//! use lily_ast::lexer::layout::with_layout;
-//!
-//! let source = "a = 0\nb = 0";
-//! let tokens = with_layout(source, tokenize(source));
-//! ```
-//!
-//! [`depth`]: Token::depth
 use super::types::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -379,8 +356,6 @@ impl LayoutEngine {
     }
 }
 
-/// Inserts layout rules to a stream of tokens by consuming it and
-/// constructing a new one.
 pub fn with_layout(source: &str, input_tokens: Vec<Token>) -> Vec<Token> {
     match &input_tokens[..] {
         [token] if token.is_eof() => return input_tokens,

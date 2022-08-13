@@ -1,24 +1,9 @@
-//! Implements the tokenizer.
-//!
-//! This module handles turning source files into a stream of tokens
-//! to be consumed by the layout engine and eventually the parser.
-//!
-//! # Usage
-//!
-//! ```rust
-//! use lily_ast::lexer::cursor::tokenize;
-//!
-//! let tokens = tokenize("a b");
-//!
-//! assert_eq!(tokens.len(), 3);
-//! ```
 use std::str::Chars;
 
 use unicode_categories::UnicodeCategories;
 
 use super::types::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
 
-/// An iterator that yields tokens.
 #[derive(Debug, Clone)]
 struct Cursor<'a> {
     length: usize,
@@ -29,7 +14,6 @@ struct Cursor<'a> {
 const EOF_CHAR: char = '\0';
 
 impl<'a> Cursor<'a> {
-    /// Creates a new [`Cursor`] given the source file.
     pub fn new(source: &'a str) -> Self {
         Self {
             length: source.len(),
@@ -185,7 +169,6 @@ impl<'a> Cursor<'a> {
     }
 }
 
-/// Converts a source file into a stream of tokens.
 pub fn tokenize(source: &str) -> Vec<Token> {
     let mut cursor = Cursor::new(source);
     let mut tokens = vec![];
