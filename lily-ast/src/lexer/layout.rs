@@ -1,4 +1,4 @@
-use super::types::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
+use super::types::{IdentifierK, LayoutK, OperatorK, Position, Token, TokenK};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DelimiterK {
@@ -26,19 +26,13 @@ impl DelimiterK {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Position {
-    pub line: usize,
-    pub column: usize,
-}
-
-struct LayoutEngine {
+pub(crate) struct LayoutEngine {
     delimiters: Vec<(Position, DelimiterK)>,
-    depth: usize,
+    pub depth: usize,
 }
 
 impl LayoutEngine {
-    fn new(initial_position: Position) -> Self {
+    pub(crate) fn new(initial_position: Position) -> Self {
         let delimiters = vec![(initial_position, DelimiterK::MaskRoot)];
         let depth = 0;
         Self { delimiters, depth }
@@ -157,7 +151,7 @@ impl LayoutEngine {
     }
 
     #[inline]
-    fn add_layout(
+    pub(crate) fn add_layout(
         &mut self,
         tokens: &mut Vec<Token>,
         current_token: Token,
@@ -322,7 +316,7 @@ impl LayoutEngine {
         }
     }
 
-    fn finalize_layout(&mut self, tokens: &mut Vec<Token>, eof_offset: usize) {
+    pub(crate) fn finalize_layout(&mut self, tokens: &mut Vec<Token>, eof_offset: usize) {
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
                 tokens.push(Token {
@@ -356,280 +350,226 @@ impl LayoutEngine {
     }
 }
 
-pub fn with_layout(source: &str, input_tokens: Vec<Token>) -> Vec<Token> {
-    match &input_tokens[..] {
-        [token] if token.is_eof() => return input_tokens,
-        _ => (),
-    }
+// #[cfg(test)]
+// mod tests {
+//     use pretty_assertions::assert_eq;
 
-    let get_position = |offset| {
-        let mut line = 1;
-        let mut column = 1;
+//     use crate::lexer::{
+//         tokenize,
+//         types::{LayoutK, TokenK},
+//     };
 
-        for (current, character) in source.chars().enumerate() {
-            if current == offset {
-                break;
-            }
-            if character == '\n' {
-                column = 1;
-                line += 1
-            } else {
-                column += 1;
-            }
-        }
+//     use super::with_layout;
 
-        Position { line, column }
-    };
+//     const SOURCE: &str = r"Identity : Type -> Type
+// Identity a ?
+//   _ : a -> Identity a
 
-    let initial_position = if let Some(initial_token) = input_tokens.first() {
-        get_position(initial_token.begin)
-    } else {
-        return input_tokens;
-    };
+// Equal : Type -> Type -> Boolean
+// Equal a b !
+//   _ : a -> a -> True
+//   _ : a -> b -> False
 
-    let mut output_tokens = vec![];
-    let mut layout_engine = LayoutEngine::new(initial_position);
+// Eq : Type -> Constraint
+// Eq a |
+//   eq : a -> a -> Boolean
 
-    for (index, &token) in input_tokens.iter().enumerate() {
-        let next_begin = match input_tokens.get(index + 1) {
-            Some(next) => next.begin,
-            None => {
-                layout_engine.finalize_layout(&mut output_tokens, source.len());
-                output_tokens.push(token.with_depth(layout_engine.depth));
-                break;
-            }
-        };
-        layout_engine.add_layout(
-            &mut output_tokens,
-            token,
-            get_position(token.begin),
-            get_position(next_begin),
-        )
-    }
+// head : List a -> Maybe a
+// head xs = case xs of
+//   Cons x _ -> Just x
+//   Nil      -> Nothing
 
-    output_tokens
-}
+// main : Effect Unit
+// main = do
+//   log message
+//   log message
+//   attempt do
+//     log message
+//     log message
 
-#[cfg(test)]
-mod tests {
-    use pretty_assertions::assert_eq;
+// ofCollapse : Int
+// ofCollapse =
+//   case
+//     do _ <- pure 0
+//        pure 1
+//   of
+//     Just x -> x
+//     Nothing -> 0
 
-    use crate::lexer::{
-        tokenize,
-        types::{LayoutK, TokenK},
-    };
+// lambdaMask : List a -> Maybe a
+// lambdaMask xs = case xs of
+//   Cons x _ if (\_ -> true) x ->
+//     Just x
+//   _ ->
+//     Nothing
 
-    use super::with_layout;
+// arrowFinishDo : List a -> Maybe a
+// arrowFinishDo xs = case xs of
+//   Cons x _ if do true ->
+//     Just x
+//   _ ->
+//     Nothing
 
-    const SOURCE: &str = r"Identity : Type -> Type
-Identity a ?
-  _ : a -> Identity a
+// conditionalDo : Effect Unit
+// conditionalDo = do
+//   log something
+//   if do true then do
+//     log something
+//   else do
+//     log something
 
-Equal : Type -> Type -> Boolean
-Equal a b !
-  _ : a -> a -> True
-  _ : a -> b -> False
+// letIn : Int
+// letIn =
+//   let
+//     x : Int
+//     x = 1
 
-Eq : Type -> Constraint
-Eq a |
-  eq : a -> a -> Boolean
+//     y : Int
+//     y = 1
+//   in
+//     x + y
 
-head : List a -> Maybe a
-head xs = case xs of
-  Cons x _ -> Just x
-  Nil      -> Nothing
+// adoIn : Int
+// adoIn = ado
+//   x <- pure 1
+//   y <- pure 1
+//   let
+//     a : Int
+//     a = let b = c in d
 
-main : Effect Unit
-main = do
-  log message
-  log message
-  attempt do
-    log message
-    log message
+//     e : Int
+//     e = let f = g in h
+//   in x + y
 
-ofCollapse : Int
-ofCollapse =
-  case
-    do _ <- pure 0
-       pure 1
-  of
-    Just x -> x
-    Nothing -> 0
+// adoLet : Effect Unit
+// adoLet = do
+//   logShow $ x + y
+//   let
+//     x : Int
+//     x = 1
 
-lambdaMask : List a -> Maybe a
-lambdaMask xs = case xs of
-  Cons x _ if (\_ -> true) x ->
-    Just x
-  _ ->
-    Nothing
+//     y : Int
+//     y = 1
+//   logShow $ x + y
+// ";
 
-arrowFinishDo : List a -> Maybe a
-arrowFinishDo xs = case xs of
-  Cons x _ if do true ->
-    Just x
-  _ ->
-    Nothing
+//     #[test]
+//     fn ascending_position() {
+//         let tokens = with_layout(SOURCE, tokenize(SOURCE));
+//         for window in tokens.windows(2) {
+//             assert!(window[0].begin <= window[1].begin);
+//             assert!(window[0].end <= window[1].end);
+//         }
+//     }
 
-conditionalDo : Effect Unit
-conditionalDo = do
-  log something
-  if do true then do
-    log something
-  else do
-    log something
+//     #[test]
+//     fn basic_layout_test() {
+//         let mut actual = String::new();
+//         let expected = r"Identity : Type -> Type;0
+// Identity a ?{1
+//   _ : a -> Identity a;1}1;0
 
-letIn : Int
-letIn =
-  let
-    x : Int
-    x = 1
+// Equal : Type -> Type -> Boolean;0
+// Equal a b !{1
+//   _ : a -> a -> True;1
+//   _ : a -> b -> False;1}1;0
 
-    y : Int
-    y = 1
-  in
-    x + y
+// Eq : Type -> Constraint;0
+// Eq a |{1
+//   eq : a -> a -> Boolean;1}1;0
 
-adoIn : Int
-adoIn = ado
-  x <- pure 1
-  y <- pure 1
-  let
-    a : Int
-    a = let b = c in d
+// head : List a -> Maybe a;0
+// head xs = case xs of{1
+//   Cons x _ -> Just x;1
+//   Nil      -> Nothing;1}1;0
 
-    e : Int
-    e = let f = g in h
-  in x + y
+// main : Effect Unit;0
+// main = do{1
+//   log message;1
+//   log message;1
+//   attempt do{2
+//     log message;2
+//     log message;2}2;1}1;0
 
-adoLet : Effect Unit
-adoLet = do
-  logShow $ x + y
-  let
-    x : Int
-    x = 1
+// ofCollapse : Int;0
+// ofCollapse =
+//   case
+//     do{1 _ <- pure 0;1
+//        pure 1;1}1
+//   of{1
+//     Just x -> x;1
+//     Nothing -> 0;1}1;0
 
-    y : Int
-    y = 1
-  logShow $ x + y
-";
+// lambdaMask : List a -> Maybe a;0
+// lambdaMask xs = case xs of{1
+//   Cons x _ if (\_ -> true) x ->
+//     Just x;1
+//   _ ->
+//     Nothing;1}1;0
 
-    #[test]
-    fn ascending_position() {
-        let tokens = with_layout(SOURCE, tokenize(SOURCE));
-        for window in tokens.windows(2) {
-            assert!(window[0].begin <= window[1].begin);
-            assert!(window[0].end <= window[1].end);
-        }
-    }
+// arrowFinishDo : List a -> Maybe a;0
+// arrowFinishDo xs = case xs of{1
+//   Cons x _ if do{2 true;2}2 ->
+//     Just x;1
+//   _ ->
+//     Nothing;1}1;0
 
-    #[test]
-    fn basic_layout_test() {
-        let mut actual = String::new();
-        let expected = r"Identity : Type -> Type;0
-Identity a ?{1
-  _ : a -> Identity a;1}1;0
+// conditionalDo : Effect Unit;0
+// conditionalDo = do{1
+//   log something;1
+//   if do{2 true;2}2 then do{2
+//     log something;2}2
+//   else do{2
+//     log something;2}2;1}1;0
 
-Equal : Type -> Type -> Boolean;0
-Equal a b !{1
-  _ : a -> a -> True;1
-  _ : a -> b -> False;1}1;0
+// letIn : Int;0
+// letIn =
+//   let{1
+//     x : Int;1
+//     x = 1;1
 
-Eq : Type -> Constraint;0
-Eq a |{1
-  eq : a -> a -> Boolean;1}1;0
+//     y : Int;1
+//     y = 1;1}1
+//   in
+//     x + y;0
 
-head : List a -> Maybe a;0
-head xs = case xs of{1
-  Cons x _ -> Just x;1
-  Nil      -> Nothing;1}1;0
+// adoIn : Int;0
+// adoIn = ado{1
+//   x <- pure 1;1
+//   y <- pure 1;1
+//   let{2
+//     a : Int;2
+//     a = let{3 b = c;3}3 in d;2
 
-main : Effect Unit;0
-main = do{1
-  log message;1
-  log message;1
-  attempt do{2
-    log message;2
-    log message;2}2;1}1;0
+//     e : Int;2
+//     e = let{3 f = g;3}3 in h;2}2;1}1
+//   in x + y;0
 
-ofCollapse : Int;0
-ofCollapse =
-  case
-    do{1 _ <- pure 0;1
-       pure 1;1}1
-  of{1
-    Just x -> x;1
-    Nothing -> 0;1}1;0
+// adoLet : Effect Unit;0
+// adoLet = do{1
+//   logShow $ x + y;1
+//   let{2
+//     x : Int;2
+//     x = 1;2
 
-lambdaMask : List a -> Maybe a;0
-lambdaMask xs = case xs of{1
-  Cons x _ if (\_ -> true) x ->
-    Just x;1
-  _ ->
-    Nothing;1}1;0
+//     y : Int;2
+//     y = 1;2}2;1
+//   logShow $ x + y;1}1;0
+// ";
 
-arrowFinishDo : List a -> Maybe a;0
-arrowFinishDo xs = case xs of{1
-  Cons x _ if do{2 true;2}2 ->
-    Just x;1
-  _ ->
-    Nothing;1}1;0
+//         for token in with_layout(SOURCE, tokenize(SOURCE)) {
+//             if let TokenK::Layout(layout) = token.kind {
+//                 match layout {
+//                     LayoutK::Begin => actual.push_str(format!("{{{}", token.depth).as_str()),
+//                     LayoutK::End => actual.push_str(format!("}}{}", token.depth).as_str()),
+//                     LayoutK::Separator => actual.push_str(format!(";{}", token.depth).as_str()),
+//                 }
+//             } else {
+//                 actual.push_str(&SOURCE[token.comment_begin..token.comment_end]);
+//                 actual.push_str(&SOURCE[token.begin..token.end]);
+//             }
+//         }
 
-conditionalDo : Effect Unit;0
-conditionalDo = do{1
-  log something;1
-  if do{2 true;2}2 then do{2
-    log something;2}2
-  else do{2
-    log something;2}2;1}1;0
-
-letIn : Int;0
-letIn =
-  let{1
-    x : Int;1
-    x = 1;1
-
-    y : Int;1
-    y = 1;1}1
-  in
-    x + y;0
-
-adoIn : Int;0
-adoIn = ado{1
-  x <- pure 1;1
-  y <- pure 1;1
-  let{2
-    a : Int;2
-    a = let{3 b = c;3}3 in d;2
-
-    e : Int;2
-    e = let{3 f = g;3}3 in h;2}2;1}1
-  in x + y;0
-
-adoLet : Effect Unit;0
-adoLet = do{1
-  logShow $ x + y;1
-  let{2
-    x : Int;2
-    x = 1;2
-
-    y : Int;2
-    y = 1;2}2;1
-  logShow $ x + y;1}1;0
-";
-
-        for token in with_layout(SOURCE, tokenize(SOURCE)) {
-            if let TokenK::Layout(layout) = token.kind {
-                match layout {
-                    LayoutK::Begin => actual.push_str(format!("{{{}", token.depth).as_str()),
-                    LayoutK::End => actual.push_str(format!("}}{}", token.depth).as_str()),
-                    LayoutK::Separator => actual.push_str(format!(";{}", token.depth).as_str()),
-                }
-            } else {
-                actual.push_str(&SOURCE[token.comment_begin..token.comment_end]);
-                actual.push_str(&SOURCE[token.begin..token.end]);
-            }
-        }
-
-        assert_eq!(actual, expected);
-    }
-}
+//         assert_eq!(actual, expected);
+//     }
+// }

@@ -96,3 +96,9 @@ impl Token {
         self
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}

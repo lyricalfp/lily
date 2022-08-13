@@ -5,7 +5,7 @@ use unicode_categories::UnicodeCategories;
 use super::types::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
 
 #[derive(Debug, Clone)]
-struct Cursor<'a> {
+pub(crate) struct Cursor<'a> {
     length: usize,
     source: &'a str,
     chars: Chars<'a>,
@@ -14,7 +14,7 @@ struct Cursor<'a> {
 const EOF_CHAR: char = '\0';
 
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str) -> Self {
+    pub(crate) fn new(source: &'a str) -> Self {
         Self {
             length: source.len(),
             source,
@@ -52,7 +52,7 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    fn take_token(&mut self) -> Token {
+    pub(crate) fn take_token(&mut self) -> Token {
         let comment_begin = self.consumed();
         loop {
             match (self.peek_1(), self.peek_2()) {
@@ -169,29 +169,19 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub fn tokenize(source: &str) -> Vec<Token> {
-    let mut cursor = Cursor::new(source);
-    let mut tokens = vec![];
-    loop {
-        let token = cursor.take_token();
-        tokens.push(token);
-        if token.is_eof() {
-            break tokens;
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::lexer::{tokenize, types::UnknownK};
+    use crate::lexer::types::UnknownK;
 
-    use super::{DigitK, IdentifierK, OperatorK, Token, TokenK};
+    use super::{Cursor, DigitK, IdentifierK, OperatorK, Token, TokenK};
     use pretty_assertions::assert_eq;
 
     #[test]
     fn double_period_after_int() {
         let source = "1..2";
-        let expected = vec![
+        let mut cursor = Cursor::new(source);
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 0,
                 comment_end: 0,
@@ -199,7 +189,10 @@ mod tests {
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
-            },
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 1,
                 comment_end: 1,
@@ -207,7 +200,10 @@ mod tests {
                 end: 3,
                 kind: TokenK::Operator(OperatorK::Source),
                 depth: 0,
-            },
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 3,
                 comment_end: 3,
@@ -215,7 +211,10 @@ mod tests {
                 end: 4,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
-            },
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 4,
                 comment_end: 4,
@@ -223,15 +222,16 @@ mod tests {
                 end: 4,
                 kind: TokenK::Unknown(UnknownK::EndOfFile),
                 depth: 0,
-            },
-        ];
-        assert_eq!(tokenize(source), expected);
+            }
+        );
     }
 
     #[test]
     fn block_comment_in_between() {
         let source = "1 {-hello-} 2";
-        let expected = vec![
+        let mut cursor = Cursor::new(source);
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 0,
                 comment_end: 0,
@@ -239,7 +239,10 @@ mod tests {
                 end: 1,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
-            },
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 1,
                 comment_end: 12,
@@ -247,7 +250,10 @@ mod tests {
                 end: 13,
                 kind: TokenK::Digit(DigitK::Int),
                 depth: 0,
-            },
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
             Token {
                 comment_begin: 13,
                 comment_end: 13,
@@ -255,34 +261,35 @@ mod tests {
                 end: 13,
                 kind: TokenK::Unknown(UnknownK::EndOfFile),
                 depth: 0,
-            },
-        ];
-        assert_eq!(tokenize(source), expected);
+            }
+        );
     }
 
     #[test]
     fn underscore_disambiguation() {
         let source = "__";
+        let mut cursor = Cursor::new(source);
         assert_eq!(
-            tokenize(source),
-            [
-                Token {
-                    comment_begin: 0,
-                    comment_end: 0,
-                    begin: 0,
-                    end: 2,
-                    kind: TokenK::Identifier(IdentifierK::Lower),
-                    depth: 0,
-                },
-                Token {
-                    comment_begin: 2,
-                    comment_end: 2,
-                    begin: 2,
-                    end: 2,
-                    kind: TokenK::Unknown(UnknownK::EndOfFile),
-                    depth: 0,
-                },
-            ]
+            cursor.take_token(),
+            Token {
+                comment_begin: 0,
+                comment_end: 0,
+                begin: 0,
+                end: 2,
+                kind: TokenK::Identifier(IdentifierK::Lower),
+                depth: 0,
+            }
+        );
+        assert_eq!(
+            cursor.take_token(),
+            Token {
+                comment_begin: 2,
+                comment_end: 2,
+                begin: 2,
+                end: 2,
+                kind: TokenK::Unknown(UnknownK::EndOfFile),
+                depth: 0,
+            }
         )
     }
 }
