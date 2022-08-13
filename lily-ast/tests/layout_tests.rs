@@ -27,6 +27,11 @@ fn lex_print(source: &str) -> String {
 
 #[test]
 fn golden_layout_tests() -> anyhow::Result<()> {
+    let accept_new = match env::var("LILY_GOLDEN_REGENERATE") {
+        Ok(value) => matches!(value.as_str(), "true"),
+        _ => false,
+    };
+
     let layout_files = Path::new(&env::var("CARGO_MANIFEST_DIR")?)
         .join("tests")
         .join("layout_tests");
@@ -50,9 +55,19 @@ fn golden_layout_tests() -> anyhow::Result<()> {
         output_path.set_extension("lily.out");
 
         let input_file = fs::read_to_string(input_path)?;
-        let output_file = fs::read_to_string(output_path)?;
 
-        assert_eq!(lex_print(&input_file), output_file);
+        match fs::read_to_string(&output_path) {
+            Ok(output_file) => {
+                if accept_new {
+                    fs::write(&output_path, lex_print(&input_file))?;
+                } else {
+                    assert_eq!(lex_print(&input_file), output_file);
+                }
+            }
+            Err(_) => {
+                fs::write(&output_path, lex_print(&input_file))?;
+            }
+        }
     }
 
     Ok(())
