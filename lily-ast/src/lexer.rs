@@ -1,5 +1,4 @@
-pub use self::types::Token;
-use self::{cursor::Cursor, layout::LayoutEngine};
+use self::{cursor::Cursor, layout::LayoutEngine, types::Token};
 
 pub mod cursor;
 pub mod layout;

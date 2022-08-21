@@ -7,11 +7,14 @@ pub enum CommentK {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IdentifierK {
     Ado,
+    As,
     Case,
     Do,
     Else,
     If,
     In,
+    Infixl,
+    Infixr,
     Let,
     Lower,
     Of,
@@ -89,6 +92,14 @@ pub struct Token {
 impl Token {
     pub fn is_eof(&self) -> bool {
         matches!(self.kind, TokenK::Unknown(UnknownK::EndOfFile))
+    }
+
+    pub fn is_separator_zero(&self) -> bool {
+        self.depth == 0 && matches!(self.kind, TokenK::Layout(LayoutK::Separator))
+    }
+
+    pub fn is_infix_identifier(&self) -> bool {
+        matches!(self.kind, TokenK::Identifier(IdentifierK::Infixl | IdentifierK::Infixr))
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {

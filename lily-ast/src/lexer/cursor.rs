@@ -96,11 +96,14 @@ impl<'a> Cursor<'a> {
                 let end = self.consumed();
                 TokenK::Identifier(match &self.source[begin..end] {
                     "ado" => IdentifierK::Ado,
+                    "as" => IdentifierK::As,
                     "case" => IdentifierK::Case,
                     "do" => IdentifierK::Do,
                     "else" => IdentifierK::Else,
                     "if" => IdentifierK::If,
                     "in" => IdentifierK::In,
+                    "infixl" => IdentifierK::Infixl,
+                    "infixr" => IdentifierK::Infixr,
                     "let" => IdentifierK::Let,
                     "of" => IdentifierK::Of,
                     "then" => IdentifierK::Then,
