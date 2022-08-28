@@ -2,9 +2,7 @@ use std::iter::Peekable;
 
 use anyhow::Context;
 
-use crate::lexer::types::Token;
-
-use super::errors::ParseError;
+use crate::{lexer::types::Token, parser::errors::ParseError};
 
 pub struct Cursor<'a, I>
 where
@@ -32,14 +30,12 @@ where
 
 #[macro_export]
 macro_rules! expect {
-    ($self:ident, $kind:pat) => {
-        {
-            let token = $self.take()?;
-            if matches!(token.kind, $kind) {
-                token
-            } else {
-                bail!(ParseError::UnexpectedToken(token.kind));
-            }
+    ($self:ident, $kind:pat) => {{
+        let token = $self.take()?;
+        if matches!(token.kind, $kind) {
+            token
+        } else {
+            bail!(ParseError::UnexpectedToken(token.kind));
         }
-    }
+    }};
 }

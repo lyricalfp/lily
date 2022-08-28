@@ -1,11 +1,11 @@
+mod core;
 mod cursor;
 mod errors;
 mod fixity;
-mod group;
 
-use crate::lexer::lex;
+use crate::lexer::{lex, types::Token};
 
-use self::{cursor::Cursor, fixity::FixityMap, group::partition};
+use self::{cursor::Cursor, fixity::FixityMap};
 
 pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
     let tokens = lex(source);
@@ -28,7 +28,45 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
         fixity_map.insert(operator, fixity);
     }
 
+    let mut declarations = vec![];
+    for declaration_group in declaration_groups {
+        let tokens = declaration_group.into_iter().copied();
+        let declaration = Cursor::new(source, tokens).declaration(&mut fixity_map)?;
+        declarations.push(declaration);
+    }
+
     Ok(())
+}
+
+fn partition(tokens: &[Token]) -> impl Iterator<Item = &[Token]> {
+    let mut tokens_iter = tokens.iter();
+    let mut last_start = 0;
+    std::iter::from_fn(move || {
+        let start = last_start;
+        let mut end = last_start;
+        loop {
+            match tokens_iter.next() {
+                Some(token) => {
+                    if token.is_eof() {
+                        break None;
+                    }
+                    end += 1;
+                    if token.is_separator_zero() {
+                        last_start = end;
+                        break Some(&tokens[start..end]);
+                    }
+                }
+                None => {
+                    if end - start == 0 {
+                        break None;
+                    } else {
+                        last_start = end;
+                        break Some(&tokens[start..end]);
+                    }
+                }
+            }
+        }
+    })
 }
 
 #[cfg(test)]
@@ -42,6 +80,7 @@ infixr 9 apply as $
 
 infixr 5 power as ^
 
+x : Int
 x = f $ x $ y
 ";
 
