@@ -33,3 +33,17 @@ where
         self.tokens.next().context(ParseError::UnexpectedEndOfFile)
     }
 }
+
+#[macro_export]
+macro_rules! expect {
+    ($self:ident, $kind:pat) => {
+        {
+            let token = $self.take()?;
+            if matches!(token.kind, $kind) {
+                token
+            } else {
+                bail!(ParseError::UnexpectedToken(token.kind));
+            }
+        }
+    }
+}

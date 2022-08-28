@@ -4,6 +4,7 @@ use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
 
 use crate::{
+    expect,
     lexer::types::{DigitK, IdentifierK, Token, TokenK},
     parser::errors::ParseError,
 };
@@ -32,48 +33,44 @@ where
     I: Iterator<Item = Token>,
 {
     pub fn fixity(&mut self) -> anyhow::Result<(SmolStr, Fixity)> {
-        let associativity = self.take()?;
-        let begin = associativity.begin;
-        let associativity = match associativity.kind {
+        let Token {
+            begin: fixity_begin,
+            kind,
+            ..
+        } = expect!(
+            self,
+            TokenK::Identifier(IdentifierK::Infixl | IdentifierK::Infixr)
+        );
+        let associativity = match kind {
             TokenK::Identifier(IdentifierK::Infixl) => Associativity::Infixl,
             TokenK::Identifier(IdentifierK::Infixr) => Associativity::Infixr,
-            _ => bail!(ParseError::UnexpectedToken(associativity.kind)),
+            _ => unreachable!(),
         };
 
-        let binding_power = self.take()?;
-        let binding_power = match binding_power.kind {
-            TokenK::Digit(DigitK::Int) => self.source[binding_power.begin..binding_power.end]
-                .parse::<u8>()
-                .context("Malformed digit token")?,
-            _ => bail!(ParseError::UnexpectedToken(binding_power.kind)),
-        };
+        let Token { begin, end, .. } = expect!(self, TokenK::Digit(DigitK::Int));
+        let binding_power = self.source[begin..end]
+            .parse()
+            .context(ParseError::InternalError(
+                "Malformed digit token.".to_string(),
+            ))?;
 
-        let identifier = self.take()?;
-        let identifier = match identifier.kind {
-            TokenK::Identifier(IdentifierK::Lower) => {
-                SmolStr::new(&self.source[identifier.begin..identifier.end])
-            }
-            _ => bail!(ParseError::UnexpectedToken(identifier.kind)),
-        };
+        let Token { begin, end, .. } = expect!(self, TokenK::Identifier(IdentifierK::Lower));
+        let identifier = SmolStr::new(&self.source[begin..end]);
 
-        let as_t = self.take()?;
-        match as_t.kind {
-            TokenK::Identifier(IdentifierK::As) => (),
-            _ => bail!(ParseError::UnexpectedToken(as_t.kind)),
-        };
+        expect!(self, TokenK::Identifier(IdentifierK::As));
 
-        let operator = self.take()?;
-        let end = operator.end;
-        let operator = match operator.kind {
-            TokenK::Operator(_) => SmolStr::new(&self.source[operator.begin..operator.end]),
-            _ => bail!(ParseError::UnexpectedToken(operator.kind)),
-        };
+        let Token {
+            begin,
+            end: fixity_end,
+            ..
+        } = expect!(self, TokenK::Operator(_));
+        let operator = SmolStr::new(&self.source[begin..fixity_end]);
 
         Ok((
             operator,
             Fixity {
-                begin,
-                end,
+                begin: fixity_begin,
+                end: fixity_end,
                 associativity,
                 binding_power,
                 identifier,

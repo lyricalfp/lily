@@ -8,4 +8,6 @@ pub enum ParseError {
     UnexpectedEndOfFile,
     #[error("Unexpected token {0:?}.")]
     UnexpectedToken(TokenK),
+    #[error("Internal error: {0}. This incident should be reported!")]
+    InternalError(String),
 }
