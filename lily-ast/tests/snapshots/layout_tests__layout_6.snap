@@ -1,0 +1,10 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+lambdaMask : List a -> Maybe a;0
+lambdaMask xs = case xs of{1
+  Cons x _ if (\_ -> true) x ->
+    Just x;1
+  _ ->
+    Nothing;1}1;0

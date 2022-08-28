@@ -1,0 +1,7 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+Eq : Type -> Constraint;0
+Eq a |{1
+  eq : a -> a -> Boolean;1}1;0

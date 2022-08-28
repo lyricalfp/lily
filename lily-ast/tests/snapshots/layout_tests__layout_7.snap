@@ -1,0 +1,10 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+arrowFinishDo : List a -> Maybe a;0
+arrowFinishDo xs = case xs of{1
+  Cons x _ if do{2 true;2}2 ->
+    Just x;1
+  _ ->
+    Nothing;1}1;0

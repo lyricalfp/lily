@@ -1,0 +1,14 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+adoIn : Int;0
+adoIn = ado{1
+  x <- pure 1;1
+  y <- pure 1;1
+  let{2
+    a : Int;2
+    a = let{3 b = c;3}3 in d;2
+    e : Int;2
+    e = let{3 f = g;3}3 in h;2}2;1}1
+  in x + y;0

@@ -1,0 +1,11 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+conditionalDo : Effect Unit;0
+conditionalDo = do{1
+  log something;1
+  if do{2 true;2}2 then do{2
+    log something;2}2
+  else do{2
+    log something;2}2;1}1;0

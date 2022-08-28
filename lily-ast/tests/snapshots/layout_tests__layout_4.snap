@@ -1,0 +1,11 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+main : Effect Unit;0
+main = do{1
+  log message;1
+  log message;1
+  attempt do{2
+    log message;2
+    log message;2}2;1}1;0

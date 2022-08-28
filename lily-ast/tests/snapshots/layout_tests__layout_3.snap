@@ -1,0 +1,8 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+head : List a -> Maybe a;0
+head xs = case xs of{1
+  Cons x _ -> Just x;1
+  Nil      -> Nothing;1}1;0

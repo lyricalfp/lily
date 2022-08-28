@@ -1,0 +1,13 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+adoLet : Effect Unit;0
+adoLet = do{1
+  logShow $ x + y;1
+  let{2
+    x : Int;2
+    x = 1;2
+    y : Int;2
+    y = 1;2}2;1
+  logShow $ x + y;1}1;0

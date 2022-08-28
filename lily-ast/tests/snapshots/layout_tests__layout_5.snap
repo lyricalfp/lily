@@ -1,0 +1,12 @@
+---
+source: lily-ast/tests/layout_tests.rs
+expression: lex_print(&source)
+---
+ofCollapse : Int;0
+ofCollapse =
+  case
+    do{1 _ <- pure 0;1
+       pure 1;1}1
+  of{1
+    Just x -> x;1
+    Nothing -> 0;1}1;0
