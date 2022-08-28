@@ -13,4 +13,5 @@ thiserror = "1.0.32"
 unicode_categories = "0.1.1"
 
 [dev-dependencies]
+insta = "1.19.0"
 pretty_assertions = "1.2.1"

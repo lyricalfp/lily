@@ -1,11 +1,9 @@
 use std::{env, fs, path::Path};
 
-use anyhow::bail;
 use lily_ast::lexer::{
     lex,
     types::{LayoutK, TokenK},
 };
-use pretty_assertions::assert_eq;
 
 fn lex_print(source: &str) -> String {
     let tokens = lex(source);
@@ -27,47 +25,14 @@ fn lex_print(source: &str) -> String {
 
 #[test]
 fn golden_layout_tests() -> anyhow::Result<()> {
-    let accept_new = match env::var("LILY_GOLDEN_REGENERATE") {
-        Ok(value) => matches!(value.as_str(), "true"),
-        _ => false,
-    };
-
     let layout_files = Path::new(&env::var("CARGO_MANIFEST_DIR")?)
         .join("tests")
         .join("layout_tests");
 
-    let mut input_paths = vec![];
-
-    for entry in fs::read_dir(layout_files.as_path())? {
-        let path = entry?.path();
-        let extension = path.extension().unwrap();
-        match extension.to_str().unwrap() {
-            "lily" => input_paths.push(path),
-            "out" => (),
-            _ => {
-                bail!("Unrecognized file: {:?}", path.as_path());
-            }
-        }
-    }
-
-    for input_path in input_paths {
-        let mut output_path = input_path.clone();
-        output_path.set_extension("lily.out");
-
-        let input_file = fs::read_to_string(input_path)?;
-
-        match fs::read_to_string(&output_path) {
-            Ok(output_file) => {
-                if accept_new {
-                    fs::write(&output_path, lex_print(&input_file))?;
-                } else {
-                    assert_eq!(lex_print(&input_file), output_file);
-                }
-            }
-            Err(_) => {
-                fs::write(&output_path, lex_print(&input_file))?;
-            }
-        }
+    for file_entry in fs::read_dir(layout_files.as_path())? {
+        let file_entry = file_entry?;
+        let file_contents = fs::read_to_string(file_entry.path())?;
+        insta::assert_snapshot!(lex_print(&file_contents));
     }
 
     Ok(())
