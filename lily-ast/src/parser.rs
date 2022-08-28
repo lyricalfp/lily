@@ -3,9 +3,10 @@ mod cursor;
 mod errors;
 mod fixity;
 
-use crate::lexer::{lex, types::Token};
-
-use self::{cursor::Cursor, fixity::FixityMap};
+use crate::{
+    lexer::{lex, types::Token},
+    parser::{cursor::Cursor, fixity::FixityMap},
+};
 
 pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
     let tokens = lex(source);
