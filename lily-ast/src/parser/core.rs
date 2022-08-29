@@ -9,6 +9,7 @@ use crate::{
         cursor::Cursor,
         errors::ParseError,
         fixity::{Associativity, Fixity, FixityMap},
+        types::{LesserPattern, LesserPatternK},
     },
 };
 
@@ -62,27 +63,61 @@ where
         ))
     }
 
-    pub fn declaration(&mut self, _: &mut FixityMap) -> anyhow::Result<()> {
-        let Token { kind, .. } = self.take()?;
+    pub fn lesser_patterns(&mut self, _: &mut FixityMap) -> anyhow::Result<Vec<LesserPattern>> {
+        let mut lesser_patterns = vec![];
+        loop {
+            if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
+                break Ok(lesser_patterns);
+            }
 
-        if let TokenK::Identifier(IdentifierK::Lower) = kind {
-            let Token { kind, .. } = self.take()?;
+            if let TokenK::Operator(OperatorK::Underscore) = self.peek()?.kind {
+                let Token { begin, end, .. } = self.take()?;
+                lesser_patterns.push(LesserPattern {
+                    begin,
+                    end,
+                    kind: LesserPatternK::Null,
+                });
+                continue;
+            }
 
-            if let TokenK::Operator(OperatorK::Colon) = kind {
+            if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
+                let Token { begin, end, .. } = self.take()?;
+                lesser_patterns.push(LesserPattern {
+                    begin,
+                    end,
+                    kind: LesserPatternK::Variable(SmolStr::new(&self.source[begin..end])),
+                });
+                continue;
+            }
+
+            bail!(ParseError::UnexpectedToken(self.peek()?.kind));
+        }
+    }
+
+    pub fn declaration(&mut self, fixity_map: &mut FixityMap) -> anyhow::Result<()> {
+        if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
+            self.take()?;
+
+            if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
+                self.take()?;
                 return Ok(());
             }
 
-            if let TokenK::Operator(OperatorK::Equal) = kind {
+            let _ = self.lesser_patterns(fixity_map)?;
+
+            if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
+                self.take()?;
                 return Ok(());
             }
 
-            bail!(ParseError::UnexpectedToken(kind));
+            bail!(ParseError::UnexpectedToken(self.peek()?.kind));
         }
 
-        if let TokenK::Identifier(IdentifierK::Upper) = kind {
+        if let TokenK::Identifier(IdentifierK::Upper) = self.peek()?.kind {
+            self.take()?;
             return Ok(());
         }
 
-        bail!(ParseError::UnexpectedToken(kind));
+        bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }
 }

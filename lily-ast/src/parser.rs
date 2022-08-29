@@ -2,6 +2,7 @@ mod core;
 mod cursor;
 mod errors;
 mod fixity;
+mod types;
 
 use crate::{
     lexer::{lex, types::Token},
@@ -81,8 +82,8 @@ infixr 9 apply as $
 
 infixr 5 power as ^
 
-x : Int
-x = f $ x $ y
+x : Int -> Int
+x _ _ = f $ x $ y
 ";
 
         parse_top_level(SOURCE)?;

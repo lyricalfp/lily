@@ -23,6 +23,10 @@ where
         }
     }
 
+    pub fn peek(&mut self) -> anyhow::Result<&Token> {
+        self.tokens.peek().context(ParseError::UnexpectedEndOfFile)
+    }
+
     pub fn take(&mut self) -> anyhow::Result<Token> {
         self.tokens.next().context(ParseError::UnexpectedEndOfFile)
     }
