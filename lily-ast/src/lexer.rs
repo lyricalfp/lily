@@ -1,7 +1,7 @@
 use self::{cursor::Cursor, layout::LayoutEngine, types::Token};
 
-pub mod cursor;
-pub mod layout;
+mod cursor;
+mod layout;
 pub mod types;
 
 pub fn lex(source: &str) -> Vec<Token> {
