@@ -135,7 +135,7 @@ where
         }
 
         if let TokenK::OpenDelimiter(DelimiterK::Round) = kind {
-            let greater_pattern = self.greater_pattern(fixity_map)?;
+            let greater_pattern = self.greater_pattern_zero(fixity_map)?;
             let Token { end, .. } = expect!(self, TokenK::CloseDelimiter(DelimiterK::Round));
             return Ok(GreaterPattern {
                 begin,
@@ -208,8 +208,36 @@ where
         Ok(accumulator)
     }
 
-    pub fn greater_pattern(&mut self, fixity_map: &FixityMap) -> anyhow::Result<GreaterPattern> {
+    pub fn greater_pattern_zero(
+        &mut self,
+        fixity_map: &FixityMap,
+    ) -> anyhow::Result<GreaterPattern> {
         self.greater_pattern_core(fixity_map, 0)
+    }
+
+    pub fn greater_patterns(
+        &mut self,
+        fixity_map: &FixityMap,
+    ) -> anyhow::Result<Vec<GreaterPattern>> {
+        let mut greater_patterns = vec![];
+
+        loop {
+            let greater_pattern = self.greater_pattern_zero(fixity_map)?;
+            greater_patterns.push(greater_pattern);
+
+            if let TokenK::Operator(OperatorK::Comma) = self.peek()?.kind {
+                self.take()?;
+                continue;
+            }
+
+            if let TokenK::Identifier(IdentifierK::If) | TokenK::Operator(OperatorK::ArrowRight) =
+                self.peek()?.kind
+            {
+                break;
+            }
+        }
+
+        Ok(greater_patterns)
     }
 
     pub fn declaration(&mut self, _: &FixityMap) -> anyhow::Result<()> {
@@ -268,6 +296,6 @@ mod tests {
             },
         );
         let mut cursor = Cursor::new(&source, tokens.into_iter());
-        dbg!(cursor.greater_pattern(&mut fixity_map).unwrap());
+        dbg!(cursor.greater_patterns(&mut fixity_map).unwrap());
     }
 }
