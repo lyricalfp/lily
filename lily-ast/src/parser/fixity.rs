@@ -16,4 +16,13 @@ pub struct Fixity {
     pub identifier: SmolStr,
 }
 
+impl Fixity {
+    pub fn as_pair(&self) -> (u8, u8) {
+        match self.associativity {
+            Associativity::Infixl => (self.binding_power, self.binding_power + 1),
+            Associativity::Infixr => (self.binding_power + 1, self.binding_power),
+        }
+    }
+}
+
 pub type FixityMap = FxHashMap<SmolStr, Fixity>;
