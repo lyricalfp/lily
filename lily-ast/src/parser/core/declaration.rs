@@ -2,7 +2,7 @@ use anyhow::bail;
 
 use crate::{
     lexer::types::{IdentifierK, OperatorK, Token, TokenK},
-    parser::{cursor::Cursor, errors::ParseError, fixity::FixityMap},
+    parser::{cursor::Cursor, errors::ParseError, types::FixityMap},
 };
 
 impl<'a, I> Cursor<'a, I>

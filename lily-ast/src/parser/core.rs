@@ -11,14 +11,14 @@ mod tests {
         lexer::lex,
         parser::{
             cursor::Cursor,
-            fixity::{Associativity, Fixity, FixityMap},
+            types::{Associativity, Fixity, FixityMap},
         },
     };
 
     #[test]
     fn core_it_works() {
         let source = "a * b + c * d";
-        let tokens = lex(&source);
+        let tokens = lex(source);
         let mut fixity_map = FixityMap::default();
         fixity_map.insert(
             SmolStr::new("+"),
@@ -40,7 +40,7 @@ mod tests {
                 identifier: SmolStr::new("*"),
             },
         );
-        let mut cursor = Cursor::new(&source, tokens.into_iter());
-        dbg!(cursor.expression(&mut fixity_map).unwrap());
+        let mut cursor = Cursor::new(source, tokens.into_iter());
+        dbg!(cursor.expression(&fixity_map).unwrap());
     }
 }

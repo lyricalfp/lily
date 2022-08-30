@@ -7,8 +7,7 @@ use crate::{
     parser::{
         cursor::Cursor,
         errors::ParseError,
-        fixity::FixityMap,
-        types::{Expression, ExpressionK},
+        types::{Expression, ExpressionK, FixityMap},
     },
 };
 

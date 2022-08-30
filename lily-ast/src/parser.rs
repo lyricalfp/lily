@@ -1,12 +1,11 @@
 mod core;
 mod cursor;
 mod errors;
-mod fixity;
-mod types;
+pub mod types;
 
 use crate::{
     lexer::{lex, types::Token},
-    parser::{cursor::Cursor, fixity::FixityMap},
+    parser::{cursor::Cursor, types::FixityMap},
 };
 
 pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
@@ -25,16 +24,15 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
 
     let mut fixity_map = FixityMap::default();
     for fixity_group in fixity_groups {
-        let tokens = fixity_group.into_iter().copied();
+        let tokens = fixity_group.iter().copied();
         let (operator, fixity) = Cursor::new(source, tokens).fixity()?;
         fixity_map.insert(operator, fixity);
     }
 
     let mut declarations = vec![];
     for declaration_group in declaration_groups {
-        let tokens = declaration_group.into_iter().copied();
-        let declaration = Cursor::new(source, tokens).declaration(&mut fixity_map)?;
-        declarations.push(declaration);
+        let tokens = declaration_group.iter().copied();
+        declarations.push(Cursor::new(source, tokens).declaration(&fixity_map)?);
     }
 
     Ok(())

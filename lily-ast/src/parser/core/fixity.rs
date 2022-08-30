@@ -7,7 +7,7 @@ use crate::{
     parser::{
         cursor::Cursor,
         errors::ParseError,
-        fixity::{Associativity, Fixity},
+        types::{Associativity, Fixity},
     },
 };
 

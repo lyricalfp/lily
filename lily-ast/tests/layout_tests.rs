@@ -27,7 +27,7 @@ fn layout_0() {
 Identity a ?
   _ : a -> Identity a";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -37,7 +37,7 @@ Equal a b !
   _ : a -> a -> True
   _ : a -> b -> False";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn layout_2() {
 Eq a |
   eq : a -> a -> Boolean";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -56,7 +56,7 @@ head xs = case xs of
   Cons x _ -> Just x
   Nil      -> Nothing";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -69,7 +69,7 @@ main = do
     log message
     log message";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -83,7 +83,7 @@ ofCollapse =
     Just x -> x
     Nothing -> 0";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -95,7 +95,7 @@ lambdaMask xs = case xs of
   _ ->
     Nothing";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -107,7 +107,7 @@ arrowFinishDo xs = case xs of
   _ ->
     Nothing";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -120,7 +120,7 @@ conditionalDo = do
   else do
     log something";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -135,7 +135,7 @@ letIn =
   in
     x + y";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -151,7 +151,7 @@ adoIn = ado
     e = let f = g in h
   in x + y";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }
 
 #[test]
@@ -166,5 +166,5 @@ adoLet = do
     y = 1
   logShow $ x + y";
 
-    insta::assert_snapshot!(lex_print(&source));
+    insta::assert_snapshot!(lex_print(source));
 }

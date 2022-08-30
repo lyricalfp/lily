@@ -99,7 +99,10 @@ impl Token {
     }
 
     pub fn is_infix_identifier(&self) -> bool {
-        matches!(self.kind, TokenK::Identifier(IdentifierK::Infixl | IdentifierK::Infixr))
+        matches!(
+            self.kind,
+            TokenK::Identifier(IdentifierK::Infixl | IdentifierK::Infixr)
+        )
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {
