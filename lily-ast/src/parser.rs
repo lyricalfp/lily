@@ -80,7 +80,6 @@ infixr 9 apply as $
 
 infixr 5 power as ^
 
-x : Int -> Int
 x _ _ = f $ x $ y
 ";
 

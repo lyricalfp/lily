@@ -75,3 +75,15 @@ pub enum ExpressionK {
     Parenthesized(Box<Expression>),
     Variable(SmolStr),
 }
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Declaration {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: DeclarationK,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DeclarationK {
+    ValueDeclaration(SmolStr, Vec<LesserPattern>, Expression),
+}
