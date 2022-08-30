@@ -30,3 +30,21 @@ pub enum GreaterPatternK {
     Parenthesized(Box<GreaterPattern>),
     Variable(SmolStr),
 }
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Expression {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: ExpressionK,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ExpressionK {
+    Application(Vec<Expression>),
+    BinaryOperator(Box<Expression>, SmolStr, Box<Expression>),
+    Constructor(SmolStr),
+    Integer(SmolStr),
+    Float(SmolStr),
+    Parenthesized(Box<Expression>),
+    Variable(SmolStr),
+}
