@@ -4,7 +4,7 @@ use smol_str::SmolStr;
 use crate::{
     lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK},
     parser::{
-        cursor::{Cursor, expect_token},
+        cursor::{expect_token, Cursor},
         errors::ParseError,
         types::{Expression, ExpressionK, FixityMap},
     },
