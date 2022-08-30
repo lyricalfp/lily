@@ -2,10 +2,9 @@ use anyhow::{bail, Context};
 use smol_str::SmolStr;
 
 use crate::{
-    expect,
     lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK},
     parser::{
-        cursor::Cursor,
+        cursor::{Cursor, expect_token},
         errors::ParseError,
         types::{Expression, ExpressionK, FixityMap},
     },
@@ -54,7 +53,7 @@ where
 
         if let TokenK::OpenDelimiter(DelimiterK::Round) = kind {
             let expression = self.expression_core(fixity_map, 0)?;
-            let Token { end, .. } = expect!(self, TokenK::CloseDelimiter(DelimiterK::Round));
+            let Token { end, .. } = expect_token!(self, TokenK::CloseDelimiter(DelimiterK::Round));
             return Ok(Expression {
                 begin,
                 end,

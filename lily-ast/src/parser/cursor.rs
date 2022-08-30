@@ -32,8 +32,9 @@ where
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
-macro_rules! expect {
+macro_rules! expect_token {
     ($self:ident, $kind:pat) => {{
         let token = $self.take()?;
         if matches!(token.kind, $kind) {
@@ -43,3 +44,5 @@ macro_rules! expect {
         }
     }};
 }
+
+pub use expect_token;

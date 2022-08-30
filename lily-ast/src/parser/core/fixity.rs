@@ -2,10 +2,9 @@ use anyhow::Context;
 use smol_str::SmolStr;
 
 use crate::{
-    expect,
     lexer::types::{DigitK, IdentifierK, Token, TokenK},
     parser::{
-        cursor::Cursor,
+        cursor::{Cursor, expect_token},
         errors::ParseError,
         types::{Associativity, Fixity},
     },
@@ -20,7 +19,7 @@ where
             begin: fixity_begin,
             kind,
             ..
-        } = expect!(
+        } = expect_token!(
             self,
             TokenK::Identifier(IdentifierK::Infixl | IdentifierK::Infixr)
         );
@@ -30,23 +29,23 @@ where
             _ => unreachable!(),
         };
 
-        let Token { begin, end, .. } = expect!(self, TokenK::Digit(DigitK::Int));
+        let Token { begin, end, .. } = expect_token!(self, TokenK::Digit(DigitK::Int));
         let binding_power = self.source[begin..end]
             .parse()
             .context(ParseError::InternalError(
                 "Malformed digit token.".to_string(),
             ))?;
 
-        let Token { begin, end, .. } = expect!(self, TokenK::Identifier(IdentifierK::Lower));
+        let Token { begin, end, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::Lower));
         let identifier = SmolStr::new(&self.source[begin..end]);
 
-        expect!(self, TokenK::Identifier(IdentifierK::As));
+        expect_token!(self, TokenK::Identifier(IdentifierK::As));
 
         let Token {
             begin,
             end: fixity_end,
             ..
-        } = expect!(self, TokenK::Operator(_));
+        } = expect_token!(self, TokenK::Operator(_));
         let operator = SmolStr::new(&self.source[begin..fixity_end]);
 
         Ok((
