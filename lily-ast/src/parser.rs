@@ -68,23 +68,3 @@ fn partition(tokens: &[Token]) -> impl Iterator<Item = &[Token]> {
         }
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::parse_top_level;
-
-    #[test]
-    fn it_works() -> anyhow::Result<()> {
-        const SOURCE: &str = r"
-infixr 9 apply as $
-
-infixr 5 power as ^
-
-x _ _ = f $ x $ y
-";
-
-        parse_top_level(SOURCE)?;
-
-        Ok(())
-    }
-}
