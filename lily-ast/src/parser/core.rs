@@ -156,7 +156,8 @@ where
 
         loop {
             if let TokenK::Identifier(IdentifierK::If)
-            | TokenK::Operator(OperatorK::Comma | OperatorK::ArrowRight) = self.peek()?.kind
+            | TokenK::Operator(OperatorK::Comma | OperatorK::ArrowRight)
+            | TokenK::CloseDelimiter(DelimiterK::Round) = self.peek()?.kind
             {
                 break;
             }
