@@ -162,18 +162,27 @@ where
                 break;
             }
 
-            if let TokenK::Operator(OperatorK::Source) = self.peek()?.kind {
-                let Token { begin, end, .. } = self.take()?;
+            if let Token {
+                begin,
+                end,
+                kind: TokenK::Operator(OperatorK::Source),
+                ..
+            } = self.peek()?
+            {
+                let source_range = *begin..*end;
+                let operator = SmolStr::new(&self.source[source_range]);
 
-                let operator = SmolStr::new(&self.source[begin..end]);
                 let (left_power, right_power) = fixity_map
                     .get(&operator)
                     .context(ParseError::InternalError(
                         "Unknown operator binding power!".to_string(),
                     ))?
                     .as_pair();
+
                 if left_power < minimum_power {
                     break;
+                } else {
+                    self.take()?;
                 }
 
                 let argument = self.greater_pattern_core(fixity_map, right_power)?;
