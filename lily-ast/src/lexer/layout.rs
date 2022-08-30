@@ -26,13 +26,13 @@ impl DelimiterK {
     }
 }
 
-pub(crate) struct LayoutEngine {
+pub struct LayoutEngine {
     delimiters: Vec<(Position, DelimiterK)>,
     pub depth: usize,
 }
 
 impl LayoutEngine {
-    pub(crate) fn new(initial_position: Position) -> Self {
+    pub fn new(initial_position: Position) -> Self {
         let delimiters = vec![(initial_position, DelimiterK::MaskRoot)];
         let depth = 0;
         Self { delimiters, depth }
@@ -151,7 +151,7 @@ impl LayoutEngine {
     }
 
     #[inline]
-    pub(crate) fn add_layout(
+    pub fn add_layout(
         &mut self,
         tokens: &mut Vec<Token>,
         current_token: Token,
@@ -316,7 +316,7 @@ impl LayoutEngine {
         }
     }
 
-    pub(crate) fn finalize_layout(&mut self, tokens: &mut Vec<Token>, eof_offset: usize) {
+    pub fn finalize_layout(&mut self, tokens: &mut Vec<Token>, eof_offset: usize) {
         while let Some((_, delimiter)) = self.delimiters.pop() {
             if let DelimiterK::MaskRoot = delimiter {
                 tokens.push(Token {

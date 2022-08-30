@@ -4,7 +4,7 @@ use anyhow::Context;
 
 use crate::{lexer::types::Token, parser::errors::ParseError};
 
-pub(crate) struct Cursor<'a, I>
+pub struct Cursor<'a, I>
 where
     I: Iterator<Item = Token>,
 {
@@ -16,18 +16,18 @@ impl<'a, I> Cursor<'a, I>
 where
     I: Iterator<Item = Token>,
 {
-    pub(crate) fn new(source: &'a str, tokens: I) -> Self {
+    pub fn new(source: &'a str, tokens: I) -> Self {
         Self {
             source,
             tokens: tokens.peekable(),
         }
     }
 
-    pub(crate) fn peek(&mut self) -> anyhow::Result<&Token> {
+    pub fn peek(&mut self) -> anyhow::Result<&Token> {
         self.tokens.peek().context(ParseError::UnexpectedEndOfFile)
     }
 
-    pub(crate) fn take(&mut self) -> anyhow::Result<Token> {
+    pub fn take(&mut self) -> anyhow::Result<Token> {
         self.tokens.next().context(ParseError::UnexpectedEndOfFile)
     }
 }

@@ -5,7 +5,7 @@ use unicode_categories::UnicodeCategories;
 use super::types::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK, UnknownK};
 
 #[derive(Debug, Clone)]
-pub(crate) struct Cursor<'a> {
+pub struct Cursor<'a> {
     length: usize,
     source: &'a str,
     chars: Chars<'a>,
@@ -14,7 +14,7 @@ pub(crate) struct Cursor<'a> {
 const EOF_CHAR: char = '\0';
 
 impl<'a> Cursor<'a> {
-    pub(crate) fn new(source: &'a str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Self {
             length: source.len(),
             source,
@@ -52,7 +52,7 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    pub(crate) fn take_token(&mut self) -> Token {
+    pub fn take_token(&mut self) -> Token {
         let comment_begin = self.consumed();
         loop {
             match (self.peek_1(), self.peek_2()) {
