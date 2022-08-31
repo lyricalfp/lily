@@ -5,14 +5,12 @@ mod patterns;
 
 #[cfg(test)]
 mod tests {
+    use lily_lexer::lex;
     use smol_str::SmolStr;
 
     use crate::{
-        lexer::lex,
-        parser::{
-            cursor::Cursor,
-            types::{Associativity, Fixity, FixityMap},
-        },
+        cursor::Cursor,
+        types::{Associativity, Fixity, FixityMap},
     };
 
     #[test]

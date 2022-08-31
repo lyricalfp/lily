@@ -1,6 +1,5 @@
+use lily_lexer::types::TokenK;
 use thiserror::Error;
-
-use crate::lexer::types::TokenK;
 
 #[derive(Debug, Error)]
 pub enum ParseError {

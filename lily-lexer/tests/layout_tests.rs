@@ -1,4 +1,4 @@
-use lily_ast::lexer::{
+use lily_lexer::{
     lex,
     types::{LayoutK, TokenK},
 };

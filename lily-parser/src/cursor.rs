@@ -1,8 +1,9 @@
 use std::iter::Peekable;
 
 use anyhow::Context;
+use lily_lexer::types::Token;
 
-use crate::{lexer::types::Token, parser::errors::ParseError};
+use crate::errors::ParseError;
 
 pub struct Cursor<'a, I>
 where

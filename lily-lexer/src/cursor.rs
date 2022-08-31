@@ -174,7 +174,7 @@ impl<'a> Cursor<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::types::UnknownK;
+    use crate::types::UnknownK;
 
     use super::{Cursor, DigitK, IdentifierK, OperatorK, Token, TokenK};
     use pretty_assertions::assert_eq;

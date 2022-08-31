@@ -3,10 +3,9 @@ mod cursor;
 mod errors;
 pub mod types;
 
-use crate::{
-    lexer::{lex, types::Token},
-    parser::{cursor::Cursor, types::FixityMap},
-};
+use lily_lexer::{lex, types::Token};
+
+use crate::{cursor::Cursor, types::FixityMap};
 
 pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
     let tokens = lex(source);

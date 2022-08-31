@@ -1,13 +1,11 @@
 use anyhow::{bail, Context};
+use lily_lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
-    lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK},
-    parser::{
-        cursor::{expect_token, Cursor},
-        errors::ParseError,
-        types::{Expression, ExpressionK, FixityMap},
-    },
+    cursor::{expect_token, Cursor},
+    errors::ParseError,
+    types::{Expression, ExpressionK, FixityMap},
 };
 
 impl<'a, I> Cursor<'a, I>
