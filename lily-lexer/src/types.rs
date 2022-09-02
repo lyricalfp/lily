@@ -105,6 +105,15 @@ impl Token {
         )
     }
 
+    pub fn is_expression_end(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenK::Identifier(IdentifierK::If | IdentifierK::Then | IdentifierK::Else)
+                | TokenK::Layout(LayoutK::Separator)
+                | TokenK::CloseDelimiter(DelimiterK::Round)
+        )
+    }
+
     pub fn with_depth(mut self, depth: usize) -> Self {
         self.depth = depth;
         self

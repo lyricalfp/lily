@@ -70,9 +70,7 @@ where
         let mut accumulator = self.expression_atom(fixity_map)?;
 
         loop {
-            if let TokenK::Layout(LayoutK::Separator) | TokenK::CloseDelimiter(DelimiterK::Round) =
-                self.peek()?.kind
-            {
+            if self.peek()?.is_expression_end() {
                 break;
             }
 
