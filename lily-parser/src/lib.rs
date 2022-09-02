@@ -25,14 +25,18 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
     let mut fixity_map = FixityMap::default();
     for fixity_group in fixity_groups {
         let tokens = fixity_group.iter().copied();
-        let (operator, fixity) = Cursor::new(source, tokens).fixity()?;
+        let mut cursor = Cursor::new(source, tokens);
+        let (operator, fixity) = cursor.fixity()?;
         fixity_map.insert(operator, fixity);
+        debug_assert!(cursor.is_exhausted());
     }
 
     let mut declarations = vec![];
     for declaration_group in declaration_groups {
         let tokens = declaration_group.iter().copied();
-        declarations.push(Cursor::new(source, tokens).declaration(&fixity_map)?);
+        let mut cursor = Cursor::new(source, tokens);
+        declarations.push(cursor.declaration(&fixity_map)?);
+        debug_assert!(cursor.is_exhausted());
     }
 
     Ok(Module { declarations })

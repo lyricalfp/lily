@@ -31,6 +31,10 @@ where
     pub fn take(&mut self) -> anyhow::Result<Token> {
         self.tokens.next().context(ParseError::UnexpectedEndOfFile)
     }
+
+    pub fn is_exhausted(&mut self) -> bool {
+        return self.tokens.peek().is_none();
+    }
 }
 
 #[doc(hidden)]
