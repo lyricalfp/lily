@@ -1,5 +1,5 @@
 use anyhow::Context;
-use lily_lexer::types::{DigitK, IdentifierK, Token, TokenK};
+use lily_lexer::types::{DigitK, IdentifierK, LayoutK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
@@ -45,6 +45,8 @@ where
             ..
         } = expect_token!(self, TokenK::Operator(_));
         let operator = SmolStr::new(&self.source[begin..fixity_end]);
+
+        expect_token!(self, TokenK::Layout(LayoutK::Separator));
 
         Ok((
             operator,
