@@ -4,10 +4,11 @@ mod errors;
 pub mod types;
 
 use lily_lexer::{lex, types::Token};
+use types::Module;
 
 use crate::{cursor::Cursor, types::FixityMap};
 
-pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
+pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
     let tokens = lex(source);
 
     let mut fixity_groups = vec![];
@@ -34,7 +35,7 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<()> {
         declarations.push(Cursor::new(source, tokens).declaration(&fixity_map)?);
     }
 
-    Ok(())
+    Ok(Module { declarations })
 }
 
 fn partition(tokens: &[Token]) -> impl Iterator<Item = &[Token]> {

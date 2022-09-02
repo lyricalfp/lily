@@ -1,0 +1,53 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 20,
+                end: 39,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 30,
+                        end: 39,
+                        kind: BinaryOperator(
+                            Expression {
+                                begin: 30,
+                                end: 35,
+                                kind: BinaryOperator(
+                                    Expression {
+                                        begin: 30,
+                                        end: 31,
+                                        kind: Variable(
+                                            "a",
+                                        ),
+                                    },
+                                    "+",
+                                    Expression {
+                                        begin: 34,
+                                        end: 35,
+                                        kind: Variable(
+                                            "b",
+                                        ),
+                                    },
+                                ),
+                            },
+                            "+",
+                            Expression {
+                                begin: 38,
+                                end: 39,
+                                kind: Variable(
+                                    "c",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

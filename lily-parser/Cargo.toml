@@ -11,3 +11,6 @@ lily-lexer = { version = "0.1.0", path = "../lily-lexer" }
 rustc-hash = "1.1.0"
 smol_str = "0.1.23"
 thiserror = "1.0.33"
+
+[dev-dependencies]
+insta = "1.19.1"

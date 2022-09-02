@@ -87,3 +87,8 @@ pub struct Declaration {
 pub enum DeclarationK {
     ValueDeclaration(SmolStr, Vec<LesserPattern>, Expression),
 }
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Module {
+    pub declarations: Vec<Declaration>,
+}
