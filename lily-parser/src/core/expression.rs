@@ -88,9 +88,7 @@ where
 
                 let (left_power, right_power) = fixity_map
                     .get(&operator)
-                    .context(ParseError::InternalError(
-                        "Unknown operator binding power!".to_string(),
-                    ))?
+                    .context(ParseError::UnknownBindingPower(operator.clone()))?
                     .as_pair();
 
                 if left_power < minimum_power {

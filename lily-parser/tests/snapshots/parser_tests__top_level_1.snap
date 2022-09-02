@@ -3,5 +3,5 @@ source: lily-parser/tests/parser_tests.rs
 expression: parse_top_level(source)
 ---
 Err(
-    Internal error: Unknown operator binding power!. This incident should be reported!,
+    Unknown binding power for operator "+".,
 )
