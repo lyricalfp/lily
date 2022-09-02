@@ -1,10 +1,11 @@
 use anyhow::bail;
-use lily_lexer::types::{IdentifierK, OperatorK, Token, TokenK};
+use lily_lexer::types::{IdentifierK, LayoutK, OperatorK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
     cursor::Cursor,
     errors::ParseError,
+    expect_token,
     types::{Declaration, DeclarationK, FixityMap},
 };
 
@@ -25,6 +26,7 @@ where
                 let expression = self.expression(fixity_map)?;
                 (expression.end, expression)
             };
+            expect_token!(self, TokenK::Layout(LayoutK::Separator));
             return Ok(Declaration {
                 begin: declaration_begin,
                 end: declaration_end,
