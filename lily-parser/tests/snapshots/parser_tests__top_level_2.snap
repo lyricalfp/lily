@@ -1,0 +1,87 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 38,
+                end: 67,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 48,
+                        end: 67,
+                        kind: BinaryOperator(
+                            Expression {
+                                begin: 48,
+                                end: 63,
+                                kind: BinaryOperator(
+                                    Expression {
+                                        begin: 48,
+                                        end: 49,
+                                        kind: Variable(
+                                            "a",
+                                        ),
+                                    },
+                                    "+",
+                                    Expression {
+                                        begin: 52,
+                                        end: 63,
+                                        kind: BinaryOperator(
+                                            Expression {
+                                                begin: 52,
+                                                end: 53,
+                                                kind: Variable(
+                                                    "b",
+                                                ),
+                                            },
+                                            "*",
+                                            Expression {
+                                                begin: 56,
+                                                end: 63,
+                                                kind: Parenthesized(
+                                                    Expression {
+                                                        begin: 57,
+                                                        end: 62,
+                                                        kind: BinaryOperator(
+                                                            Expression {
+                                                                begin: 57,
+                                                                end: 58,
+                                                                kind: Variable(
+                                                                    "c",
+                                                                ),
+                                                            },
+                                                            "+",
+                                                            Expression {
+                                                                begin: 61,
+                                                                end: 62,
+                                                                kind: Variable(
+                                                                    "d",
+                                                                ),
+                                                            },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                            "+",
+                            Expression {
+                                begin: 66,
+                                end: 67,
+                                kind: Variable(
+                                    "e",
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)
