@@ -62,11 +62,36 @@ where
         bail!(ParseError::UnexpectedToken(kind));
     }
 
+    fn expression_if(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
+        let Token { begin, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::If));
+        let condition = self.expression(fixity_map)?;
+
+        expect_token!(self, TokenK::Identifier(IdentifierK::Then));
+        let then_value = self.expression(fixity_map)?;
+
+        expect_token!(self, TokenK::Identifier(IdentifierK::Else));
+        let else_value @ Expression { end, .. } = self.expression(fixity_map)?;
+
+        return Ok(Expression {
+            begin,
+            end,
+            kind: ExpressionK::IfThenElse(
+                Box::new(condition),
+                Box::new(then_value),
+                Box::new(else_value),
+            ),
+        });
+    }
+
     fn expression_core(
         &mut self,
         fixity_map: &FixityMap,
         minimum_power: u8,
     ) -> anyhow::Result<Expression> {
+        if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
+            return self.expression_if(fixity_map);
+        }
+
         let mut accumulator = self.expression_atom(fixity_map)?;
 
         loop {

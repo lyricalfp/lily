@@ -70,6 +70,7 @@ pub enum ExpressionK {
     Application(Vec<Expression>),
     BinaryOperator(Box<Expression>, SmolStr, Box<Expression>),
     Constructor(SmolStr),
+    IfThenElse(Box<Expression>, Box<Expression>, Box<Expression>),
     Integer(SmolStr),
     Float(SmolStr),
     Parenthesized(Box<Expression>),

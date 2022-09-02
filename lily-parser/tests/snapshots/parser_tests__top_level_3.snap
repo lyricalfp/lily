@@ -1,0 +1,105 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 20,
+                end: 99,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 30,
+                        end: 99,
+                        kind: IfThenElse(
+                            Expression {
+                                begin: 33,
+                                end: 51,
+                                kind: IfThenElse(
+                                    Expression {
+                                        begin: 36,
+                                        end: 37,
+                                        kind: Variable(
+                                            "a",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 43,
+                                        end: 44,
+                                        kind: Variable(
+                                            "b",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 50,
+                                        end: 51,
+                                        kind: Variable(
+                                            "c",
+                                        ),
+                                    },
+                                ),
+                            },
+                            Expression {
+                                begin: 57,
+                                end: 75,
+                                kind: IfThenElse(
+                                    Expression {
+                                        begin: 60,
+                                        end: 61,
+                                        kind: Variable(
+                                            "d",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 67,
+                                        end: 68,
+                                        kind: Variable(
+                                            "e",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 74,
+                                        end: 75,
+                                        kind: Variable(
+                                            "f",
+                                        ),
+                                    },
+                                ),
+                            },
+                            Expression {
+                                begin: 81,
+                                end: 99,
+                                kind: IfThenElse(
+                                    Expression {
+                                        begin: 84,
+                                        end: 85,
+                                        kind: Variable(
+                                            "g",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 91,
+                                        end: 92,
+                                        kind: Variable(
+                                            "h",
+                                        ),
+                                    },
+                                    Expression {
+                                        begin: 98,
+                                        end: 99,
+                                        kind: Variable(
+                                            "i",
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

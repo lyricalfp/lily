@@ -31,3 +31,14 @@ example = a + b * (c + d) + e
 
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+pub fn top_level_3() {
+    let source = r"
+infixl 1 add as +
+
+example = if if a then b else c then if d then e else f else if g then h else i
+";
+
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}
