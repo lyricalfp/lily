@@ -67,7 +67,7 @@ pub struct Expression {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ExpressionK {
-    Application(Vec<Expression>),
+    Application(Box<Expression>, Vec<Expression>),
     BinaryOperator(Box<Expression>, SmolStr, Box<Expression>),
     Constructor(SmolStr),
     IfThenElse(Box<Expression>, Box<Expression>, Box<Expression>),

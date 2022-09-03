@@ -135,15 +135,15 @@ where
 
             let argument = self.expression_atom(fixity_map)?;
             match &mut accumulator.kind {
-                ExpressionK::Application(spines) => {
+                ExpressionK::Application(_, arguments) => {
                     accumulator.end = argument.end;
-                    spines.push(argument);
+                    arguments.push(argument);
                 }
                 _ => {
                     accumulator = Expression {
                         begin: accumulator.begin,
                         end: argument.end,
-                        kind: ExpressionK::Application(vec![accumulator, argument]),
+                        kind: ExpressionK::Application(Box::new(accumulator), vec![argument]),
                     }
                 }
             }

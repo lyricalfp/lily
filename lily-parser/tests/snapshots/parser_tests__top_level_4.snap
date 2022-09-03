@@ -1,0 +1,47 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 16,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 11,
+                        end: 16,
+                        kind: Application(
+                            Expression {
+                                begin: 11,
+                                end: 12,
+                                kind: Variable(
+                                    "f",
+                                ),
+                            },
+                            [
+                                Expression {
+                                    begin: 13,
+                                    end: 14,
+                                    kind: Variable(
+                                        "a",
+                                    ),
+                                },
+                                Expression {
+                                    begin: 15,
+                                    end: 16,
+                                    kind: Variable(
+                                        "b",
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)
