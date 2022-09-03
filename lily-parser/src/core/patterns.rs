@@ -10,6 +10,28 @@ use crate::{
 
 impl<'a> Cursor<'a>
 {
+    pub fn lesser_pattern(&mut self) -> anyhow::Result<LesserPattern> {
+        if let TokenK::Operator(OperatorK::Underscore) = self.peek()?.kind {
+            let Token { begin, end, .. } = self.take()?;
+            return Ok(LesserPattern {
+                begin,
+                end,
+                kind: LesserPatternK::Null,
+            });
+        }
+
+        if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
+            let Token { begin, end, .. } = self.take()?;
+            return Ok(LesserPattern {
+                begin,
+                end,
+                kind: LesserPatternK::Variable(SmolStr::new(&self.source[begin..end])),
+            });
+        }
+
+        bail!(ParseError::UnexpectedToken(self.peek()?.kind));
+    }
+
     pub fn lesser_patterns(&mut self) -> anyhow::Result<Vec<LesserPattern>> {
         let mut lesser_patterns = vec![];
         loop {

@@ -1,0 +1,233 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 118,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 11,
+                        end: 118,
+                        kind: DoBlock(
+                            [
+                                DoStatement {
+                                    begin: 16,
+                                    end: 41,
+                                    kind: LetStatement(
+                                        [
+                                            Declaration {
+                                                begin: 24,
+                                                end: 30,
+                                                kind: ValueDeclaration(
+                                                    "u",
+                                                    [],
+                                                    Expression {
+                                                        begin: 28,
+                                                        end: 30,
+                                                        kind: Integer(
+                                                            "21",
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                            Declaration {
+                                                begin: 35,
+                                                end: 41,
+                                                kind: ValueDeclaration(
+                                                    "v",
+                                                    [],
+                                                    Expression {
+                                                        begin: 39,
+                                                        end: 41,
+                                                        kind: Integer(
+                                                            "21",
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    ),
+                                },
+                                DoStatement {
+                                    begin: 44,
+                                    end: 56,
+                                    kind: BindExpression(
+                                        LesserPattern {
+                                            begin: 44,
+                                            end: 45,
+                                            kind: Variable(
+                                                "w",
+                                            ),
+                                        },
+                                        Expression {
+                                            begin: 49,
+                                            end: 56,
+                                            kind: Application(
+                                                Expression {
+                                                    begin: 49,
+                                                    end: 53,
+                                                    kind: Variable(
+                                                        "pure",
+                                                    ),
+                                                },
+                                                [
+                                                    Expression {
+                                                        begin: 54,
+                                                        end: 56,
+                                                        kind: Integer(
+                                                            "21",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                                DoStatement {
+                                    begin: 59,
+                                    end: 71,
+                                    kind: BindExpression(
+                                        LesserPattern {
+                                            begin: 59,
+                                            end: 60,
+                                            kind: Variable(
+                                                "x",
+                                            ),
+                                        },
+                                        Expression {
+                                            begin: 64,
+                                            end: 71,
+                                            kind: Application(
+                                                Expression {
+                                                    begin: 64,
+                                                    end: 68,
+                                                    kind: Variable(
+                                                        "pure",
+                                                    ),
+                                                },
+                                                [
+                                                    Expression {
+                                                        begin: 69,
+                                                        end: 71,
+                                                        kind: Integer(
+                                                            "21",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                                DoStatement {
+                                    begin: 74,
+                                    end: 118,
+                                    kind: DiscardExpression(
+                                        Expression {
+                                            begin: 74,
+                                            end: 118,
+                                            kind: Application(
+                                                Expression {
+                                                    begin: 74,
+                                                    end: 81,
+                                                    kind: Variable(
+                                                        "attempt",
+                                                    ),
+                                                },
+                                                [
+                                                    Expression {
+                                                        begin: 82,
+                                                        end: 118,
+                                                        kind: DoBlock(
+                                                            [
+                                                                DoStatement {
+                                                                    begin: 89,
+                                                                    end: 101,
+                                                                    kind: BindExpression(
+                                                                        LesserPattern {
+                                                                            begin: 89,
+                                                                            end: 90,
+                                                                            kind: Variable(
+                                                                                "y",
+                                                                            ),
+                                                                        },
+                                                                        Expression {
+                                                                            begin: 94,
+                                                                            end: 101,
+                                                                            kind: Application(
+                                                                                Expression {
+                                                                                    begin: 94,
+                                                                                    end: 98,
+                                                                                    kind: Variable(
+                                                                                        "pure",
+                                                                                    ),
+                                                                                },
+                                                                                [
+                                                                                    Expression {
+                                                                                        begin: 99,
+                                                                                        end: 101,
+                                                                                        kind: Integer(
+                                                                                            "21",
+                                                                                        ),
+                                                                                    },
+                                                                                ],
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                                DoStatement {
+                                                                    begin: 106,
+                                                                    end: 118,
+                                                                    kind: BindExpression(
+                                                                        LesserPattern {
+                                                                            begin: 106,
+                                                                            end: 107,
+                                                                            kind: Variable(
+                                                                                "z",
+                                                                            ),
+                                                                        },
+                                                                        Expression {
+                                                                            begin: 111,
+                                                                            end: 118,
+                                                                            kind: Application(
+                                                                                Expression {
+                                                                                    begin: 111,
+                                                                                    end: 115,
+                                                                                    kind: Variable(
+                                                                                        "pure",
+                                                                                    ),
+                                                                                },
+                                                                                [
+                                                                                    Expression {
+                                                                                        begin: 116,
+                                                                                        end: 118,
+                                                                                        kind: Integer(
+                                                                                            "21",
+                                                                                        ),
+                                                                                    },
+                                                                                ],
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ],
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

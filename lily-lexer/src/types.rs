@@ -115,7 +115,7 @@ impl Token {
     }
 
     pub fn is_block_argument(&self) -> bool {
-        matches!(self.kind, TokenK::Identifier(IdentifierK::If))
+        matches!(self.kind, TokenK::Identifier(IdentifierK::If | IdentifierK::Do))
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {

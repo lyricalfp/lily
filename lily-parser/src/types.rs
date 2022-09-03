@@ -70,11 +70,26 @@ pub enum ExpressionK {
     Application(Box<Expression>, Vec<Expression>),
     BinaryOperator(Box<Expression>, SmolStr, Box<Expression>),
     Constructor(SmolStr),
+    DoBlock(Vec<DoStatement>),
     IfThenElse(Box<Expression>, Box<Expression>, Box<Expression>),
     Integer(SmolStr),
     Float(SmolStr),
     Parenthesized(Box<Expression>),
     Variable(SmolStr),
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DoStatement {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: DoStatementK,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DoStatementK {
+    BindExpression(LesserPattern, Expression),
+    DiscardExpression(Expression),
+    LetStatement(Vec<Declaration>),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]

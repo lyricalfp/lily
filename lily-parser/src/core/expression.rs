@@ -5,11 +5,12 @@ use smol_str::SmolStr;
 use crate::{
     cursor::{expect_token, Cursor},
     errors::ParseError,
-    types::{Expression, ExpressionK, FixityMap},
+    types::{
+        Declaration, DoStatement, DoStatementK, Expression, ExpressionK, FixityMap, LesserPattern,
+    },
 };
 
-impl<'a> Cursor<'a>
-{
+impl<'a> Cursor<'a> {
     fn expression_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
         let Token {
             begin, end, kind, ..
@@ -81,6 +82,111 @@ impl<'a> Cursor<'a>
         });
     }
 
+    fn expression_do(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
+        let Token {
+            begin: do_begin,
+            end: do_end,
+            ..
+        } = expect_token!(self, TokenK::Identifier(IdentifierK::Do));
+
+        if let TokenK::Layout(LayoutK::Separator) = self.peek()?.kind {
+            return Ok(Expression {
+                begin: do_begin,
+                end: do_end,
+                kind: ExpressionK::DoBlock(vec![]),
+            });
+        }
+
+        expect_token!(self, TokenK::Layout(LayoutK::Begin));
+        let mut statements: Vec<DoStatement> = vec![];
+        let argument_end = loop {
+            if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
+                expect_token!(self, TokenK::Layout(LayoutK::End));
+                match statements.last() {
+                    Some(last) => break last.end,
+                    None => break do_end,
+                }
+            }
+            statements.push(self.expression_do_statement(fixity_map)?);
+        };
+
+        Ok(Expression {
+            begin: do_begin,
+            end: argument_end,
+            kind: ExpressionK::DoBlock(statements),
+        })
+    }
+
+    fn expression_do_statement(&mut self, fixity_map: &FixityMap) -> anyhow::Result<DoStatement> {
+        if let TokenK::Identifier(IdentifierK::Let) = self.peek()?.kind {
+            let Token { begin, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::Let));
+
+            expect_token!(self, TokenK::Layout(LayoutK::Begin));
+
+            let declaration @ Declaration { mut end, .. } = self.declaration(fixity_map)?;
+            let mut declarations = vec![declaration];
+            loop {
+                if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
+                    break;
+                }
+                let declaration = self.declaration(fixity_map)?;
+                end = declaration.end;
+                declarations.push(declaration);
+            }
+
+            expect_token!(self, TokenK::Layout(LayoutK::End));
+            expect_token!(self, TokenK::Layout(LayoutK::Separator));
+
+            return Ok(DoStatement {
+                begin,
+                end,
+                kind: DoStatementK::LetStatement(declarations),
+            });
+        }
+
+        if let do_statement @ Ok(_) =
+            self.attempt(|this| this.expression_do_statement_discard(fixity_map))
+        {
+            return do_statement;
+        }
+
+        if let do_statement @ Ok(_) =
+            self.attempt(|this| this.expression_do_statement_bind(fixity_map))
+        {
+            return do_statement;
+        }
+
+        bail!(ParseError::UnexpectedToken(self.peek()?.kind));
+    }
+
+    fn expression_do_statement_bind(
+        &mut self,
+        fixity_map: &FixityMap,
+    ) -> anyhow::Result<DoStatement> {
+        let lesser_pattern @ LesserPattern { begin, .. } = self.lesser_pattern()?;
+        expect_token!(self, TokenK::Operator(OperatorK::ArrowLeft));
+        let expression @ Expression { end, .. } = self.expression(fixity_map)?;
+        expect_token!(self, TokenK::Layout(LayoutK::Separator));
+        return Ok(DoStatement {
+            begin,
+            end,
+            kind: DoStatementK::BindExpression(lesser_pattern, expression),
+        });
+    }
+
+    fn expression_do_statement_discard(
+        &mut self,
+        fixity_map: &FixityMap,
+    ) -> anyhow::Result<DoStatement> {
+        let expression @ Expression { begin, end, .. } = self.expression(fixity_map)?;
+        expect_token!(self, TokenK::Layout(LayoutK::Separator));
+        Ok(DoStatement {
+            begin,
+            end,
+            kind: DoStatementK::DiscardExpression(expression),
+        })
+    }
+
     fn expression_core(
         &mut self,
         fixity_map: &FixityMap,
@@ -88,6 +194,9 @@ impl<'a> Cursor<'a>
     ) -> anyhow::Result<Expression> {
         if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
             return self.expression_if(fixity_map);
+        }
+        if let TokenK::Identifier(IdentifierK::Do) = self.peek()?.kind {
+            return self.expression_do(fixity_map);
         }
 
         let mut accumulator = self.expression_atom(fixity_map)?;
@@ -98,14 +207,19 @@ impl<'a> Cursor<'a>
             }
 
             if self.peek()?.is_block_argument() {
-                if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
-                    let if_expression = self.expression_if(fixity_map)?;
-                    accumulator = Expression {
-                        begin: accumulator.begin,
-                        end: if_expression.end,
-                        kind: ExpressionK::Application(Box::new(accumulator), vec![if_expression]),
-                    }
-                }
+                let argument = match self.peek()?.kind {
+                    TokenK::Identifier(IdentifierK::If) => self.expression_if(fixity_map)?,
+                    TokenK::Identifier(IdentifierK::Do) => self.expression_do(fixity_map)?,
+                    kind => bail!(ParseError::InternalError(format!(
+                        "Unhandled block argument '{:?}'",
+                        kind
+                    ))),
+                };
+                accumulator = Expression {
+                    begin: accumulator.begin,
+                    end: argument.end,
+                    kind: ExpressionK::Application(Box::new(accumulator), vec![argument]),
+                };
                 continue;
             }
 

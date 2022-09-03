@@ -62,3 +62,19 @@ example = f (if a then b else c) d
 
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+fn top_level_6() {
+    let source = "
+example = do
+  let
+    u = 21
+    v = 21
+  w <- pure 21
+  x <- pure 21
+  attempt do
+    y <- pure 21
+    z <- pure 21
+";
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}
