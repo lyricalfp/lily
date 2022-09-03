@@ -1,39 +1,41 @@
-use std::iter::Peekable;
-
-use anyhow::Context;
+use anyhow::bail;
 use lily_lexer::types::Token;
 
 use crate::errors::ParseError;
 
-pub struct Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
-{
+pub struct Cursor<'a> {
     pub source: &'a str,
-    tokens: Peekable<I>,
+    tokens: &'a [Token],
+    index: usize,
 }
 
-impl<'a, I> Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
-{
-    pub fn new(source: &'a str, tokens: I) -> Self {
+impl<'a> Cursor<'a> {
+    pub fn new(source: &'a str, tokens: &'a [Token]) -> Self {
         Self {
             source,
-            tokens: tokens.peekable(),
+            tokens,
+            index: 0,
         }
     }
 
     pub fn peek(&mut self) -> anyhow::Result<&Token> {
-        self.tokens.peek().context(ParseError::UnexpectedEndOfFile)
+        if self.is_eof() {
+            bail!(ParseError::UnexpectedEndOfFile);
+        }
+        Ok(&self.tokens[self.index])
     }
 
     pub fn take(&mut self) -> anyhow::Result<Token> {
-        self.tokens.next().context(ParseError::UnexpectedEndOfFile)
+        if self.is_eof() {
+            bail!(ParseError::UnexpectedEndOfFile);
+        }
+        let token = self.tokens[self.index];
+        self.index += 1;
+        Ok(token)
     }
 
-    pub fn is_exhausted(&mut self) -> bool {
-        return self.tokens.peek().is_none();
+    pub fn is_eof(&mut self) -> bool {
+        self.index == self.tokens.len()
     }
 }
 

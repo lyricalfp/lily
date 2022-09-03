@@ -8,9 +8,7 @@ use crate::{
     types::{FixityMap, GreaterPattern, GreaterPatternK, LesserPattern, LesserPatternK},
 };
 
-impl<'a, I> Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
+impl<'a> Cursor<'a>
 {
     pub fn lesser_patterns(&mut self) -> anyhow::Result<Vec<LesserPattern>> {
         let mut lesser_patterns = vec![];
@@ -44,9 +42,7 @@ where
     }
 }
 
-impl<'a, I> Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
+impl<'a> Cursor<'a>
 {
     fn greater_pattern_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<GreaterPattern> {
         let Token {

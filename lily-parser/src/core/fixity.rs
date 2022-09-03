@@ -8,9 +8,7 @@ use crate::{
     types::{Associativity, Fixity},
 };
 
-impl<'a, I> Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
+impl<'a> Cursor<'a>
 {
     pub fn fixity(&mut self) -> anyhow::Result<(SmolStr, Fixity)> {
         let Token {

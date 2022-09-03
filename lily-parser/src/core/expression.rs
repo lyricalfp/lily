@@ -8,9 +8,7 @@ use crate::{
     types::{Expression, ExpressionK, FixityMap},
 };
 
-impl<'a, I> Cursor<'a, I>
-where
-    I: Iterator<Item = Token>,
+impl<'a> Cursor<'a>
 {
     fn expression_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
         let Token {
