@@ -37,6 +37,20 @@ impl<'a> Cursor<'a> {
     pub fn is_eof(&mut self) -> bool {
         self.index == self.tokens.len()
     }
+
+    pub fn attempt<T>(
+        &mut self,
+        callback: impl FnOnce(&mut Self) -> anyhow::Result<T>,
+    ) -> anyhow::Result<T> {
+        let index = self.index;
+        match callback(self) {
+            Ok(ok) => Ok(ok),
+            Err(err) => {
+                self.index = index;
+                Err(err)
+            }
+        }
+    }
 }
 
 #[doc(hidden)]
