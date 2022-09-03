@@ -95,8 +95,20 @@ where
         let mut accumulator = self.expression_atom(fixity_map)?;
 
         loop {
-            if self.peek()?.is_expression_end() {
+            if self.peek()?.is_expression_boundary() {
                 break;
+            }
+
+            if self.peek()?.is_block_argument() {
+                if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
+                    let if_expression = self.expression_if(fixity_map)?;
+                    accumulator = Expression {
+                        begin: accumulator.begin,
+                        end: if_expression.end,
+                        kind: ExpressionK::Application(Box::new(accumulator), vec![if_expression]),
+                    }
+                }
+                continue;
             }
 
             if let Token {

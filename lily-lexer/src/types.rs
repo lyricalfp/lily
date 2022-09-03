@@ -105,13 +105,17 @@ impl Token {
         )
     }
 
-    pub fn is_expression_end(&self) -> bool {
+    pub fn is_expression_boundary(&self) -> bool {
         matches!(
             self.kind,
-            TokenK::Identifier(IdentifierK::If | IdentifierK::Then | IdentifierK::Else)
+            TokenK::Identifier(IdentifierK::Then | IdentifierK::Else)
                 | TokenK::Layout(LayoutK::Separator)
                 | TokenK::CloseDelimiter(DelimiterK::Round)
         )
+    }
+
+    pub fn is_block_argument(&self) -> bool {
+        matches!(self.kind, TokenK::Identifier(IdentifierK::If))
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {

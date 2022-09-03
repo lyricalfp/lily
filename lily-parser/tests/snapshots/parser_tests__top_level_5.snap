@@ -1,0 +1,138 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 33,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 11,
+                        end: 33,
+                        kind: Application(
+                            Expression {
+                                begin: 11,
+                                end: 12,
+                                kind: Variable(
+                                    "f",
+                                ),
+                            },
+                            [
+                                Expression {
+                                    begin: 13,
+                                    end: 33,
+                                    kind: IfThenElse(
+                                        Expression {
+                                            begin: 16,
+                                            end: 17,
+                                            kind: Variable(
+                                                "a",
+                                            ),
+                                        },
+                                        Expression {
+                                            begin: 23,
+                                            end: 24,
+                                            kind: Variable(
+                                                "b",
+                                            ),
+                                        },
+                                        Expression {
+                                            begin: 30,
+                                            end: 33,
+                                            kind: Application(
+                                                Expression {
+                                                    begin: 30,
+                                                    end: 31,
+                                                    kind: Variable(
+                                                        "c",
+                                                    ),
+                                                },
+                                                [
+                                                    Expression {
+                                                        begin: 32,
+                                                        end: 33,
+                                                        kind: Variable(
+                                                            "d",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+            Declaration {
+                begin: 35,
+                end: 69,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 45,
+                        end: 69,
+                        kind: Application(
+                            Expression {
+                                begin: 45,
+                                end: 46,
+                                kind: Variable(
+                                    "f",
+                                ),
+                            },
+                            [
+                                Expression {
+                                    begin: 47,
+                                    end: 67,
+                                    kind: Parenthesized(
+                                        Expression {
+                                            begin: 48,
+                                            end: 66,
+                                            kind: IfThenElse(
+                                                Expression {
+                                                    begin: 51,
+                                                    end: 52,
+                                                    kind: Variable(
+                                                        "a",
+                                                    ),
+                                                },
+                                                Expression {
+                                                    begin: 58,
+                                                    end: 59,
+                                                    kind: Variable(
+                                                        "b",
+                                                    ),
+                                                },
+                                                Expression {
+                                                    begin: 65,
+                                                    end: 66,
+                                                    kind: Variable(
+                                                        "c",
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                                Expression {
+                                    begin: 68,
+                                    end: 69,
+                                    kind: Variable(
+                                        "d",
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

@@ -51,3 +51,14 @@ example = f a b
 
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+pub fn top_level_5() {
+    let source = r"
+example = f if a then b else c d
+
+example = f (if a then b else c) d
+";
+
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}
