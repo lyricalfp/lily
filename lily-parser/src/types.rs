@@ -49,7 +49,7 @@ pub struct GreaterPattern {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum GreaterPatternK {
-    Application(Vec<GreaterPattern>),
+    Application(Box<GreaterPattern>, Vec<GreaterPattern>),
     BinaryOperator(Box<GreaterPattern>, SmolStr, Box<GreaterPattern>),
     Constructor(SmolStr),
     Integer(SmolStr),

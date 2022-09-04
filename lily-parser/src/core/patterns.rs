@@ -8,8 +8,7 @@ use crate::{
     types::{FixityMap, GreaterPattern, GreaterPatternK, LesserPattern, LesserPatternK},
 };
 
-impl<'a> Cursor<'a>
-{
+impl<'a> Cursor<'a> {
     pub fn lesser_pattern(&mut self) -> anyhow::Result<LesserPattern> {
         if let TokenK::Operator(OperatorK::Underscore) = self.peek()?.kind {
             let Token { begin, end, .. } = self.take()?;
@@ -64,8 +63,7 @@ impl<'a> Cursor<'a>
     }
 }
 
-impl<'a> Cursor<'a>
-{
+impl<'a> Cursor<'a> {
     fn greater_pattern_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<GreaterPattern> {
         let Token {
             begin, end, kind, ..
@@ -164,15 +162,15 @@ impl<'a> Cursor<'a>
 
             let argument = self.greater_pattern_atom(fixity_map)?;
             match &mut accumulator.kind {
-                GreaterPatternK::Application(spines) => {
+                GreaterPatternK::Application(_, arguments) => {
                     accumulator.end = argument.end;
-                    spines.push(argument);
+                    arguments.push(argument);
                 }
                 _ => {
                     accumulator = GreaterPattern {
                         begin: accumulator.begin,
                         end: argument.end,
-                        kind: GreaterPatternK::Application(vec![accumulator, argument]),
+                        kind: GreaterPatternK::Application(Box::new(accumulator), vec![argument]),
                     }
                 }
             }
