@@ -115,6 +115,9 @@ impl<'a> Cursor<'a> {
                 TokenK::Identifier(IdentifierK::Upper)
             }
             // Compound Symbols
+            '_' => {
+                TokenK::Operator(OperatorK::Underscore)
+            }
             initial if initial.is_symbol() || initial.is_punctuation() => {
                 self.take_while(|c| !"(){}[]".contains(c) && (c.is_symbol() || c.is_punctuation()));
                 let end = self.consumed();
@@ -127,7 +130,6 @@ impl<'a> Cursor<'a> {
                     "|" => OperatorK::Pipe,
                     "?" => OperatorK::Question,
                     "!" => OperatorK::Bang,
-                    "_" => OperatorK::Underscore,
                     "<" => OperatorK::LessThan,
                     ">" => OperatorK::GreaterThan,
                     _ => OperatorK::Source,
