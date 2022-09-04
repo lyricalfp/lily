@@ -124,10 +124,7 @@ impl<'a> Cursor<'a>
         let mut accumulator = self.greater_pattern_atom(fixity_map)?;
 
         loop {
-            if let TokenK::Identifier(IdentifierK::If)
-            | TokenK::Operator(OperatorK::Comma | OperatorK::ArrowRight)
-            | TokenK::CloseDelimiter(DelimiterK::Round) = self.peek()?.kind
-            {
+            if self.peek()?.is_greater_pattern_boundary() {
                 break;
             }
 

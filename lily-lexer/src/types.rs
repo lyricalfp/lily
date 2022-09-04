@@ -105,6 +105,15 @@ impl Token {
         )
     }
 
+    pub fn is_greater_pattern_boundary(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenK::Identifier(IdentifierK::If)
+                | TokenK::Operator(OperatorK::Comma | OperatorK::ArrowRight)
+                | TokenK::CloseDelimiter(DelimiterK::Round)
+        )
+    }
+
     pub fn is_expression_boundary(&self) -> bool {
         matches!(
             self.kind,
@@ -115,7 +124,10 @@ impl Token {
     }
 
     pub fn is_block_argument(&self) -> bool {
-        matches!(self.kind, TokenK::Identifier(IdentifierK::If | IdentifierK::Do))
+        matches!(
+            self.kind,
+            TokenK::Identifier(IdentifierK::If | IdentifierK::Do)
+        )
     }
 
     pub fn with_depth(mut self, depth: usize) -> Self {
