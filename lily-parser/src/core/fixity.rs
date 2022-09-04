@@ -8,8 +8,7 @@ use crate::{
     types::{Associativity, Fixity},
 };
 
-impl<'a> Cursor<'a>
-{
+impl<'a> Cursor<'a> {
     pub fn fixity(&mut self) -> anyhow::Result<(SmolStr, Fixity)> {
         let Token {
             begin: fixity_begin,

@@ -9,8 +9,7 @@ use crate::{
     types::{Declaration, DeclarationK, FixityMap},
 };
 
-impl<'a> Cursor<'a>
-{
+impl<'a> Cursor<'a> {
     fn declaration_value(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Declaration> {
         let (declaration_begin, identifier) = {
             let Token { begin, end, .. } = self.take()?;
