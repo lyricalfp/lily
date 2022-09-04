@@ -171,11 +171,8 @@ impl<'a> Cursor<'a> {
         let mut greater_patterns = vec![];
 
         loop {
-            let greater_pattern = self.greater_pattern_core(fixity_map, 0)?;
-            greater_patterns.push(greater_pattern);
-
             if let TokenK::Operator(OperatorK::Comma) = self.peek()?.kind {
-                self.take()?;
+                expect_token!(self, TokenK::Operator(OperatorK::Comma));
                 continue;
             }
 
@@ -184,6 +181,8 @@ impl<'a> Cursor<'a> {
             {
                 break;
             }
+
+            greater_patterns.push(self.greater_pattern_core(fixity_map, 0)?);
         }
 
         Ok(greater_patterns)
