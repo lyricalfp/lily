@@ -78,3 +78,11 @@ example = do
 ";
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+fn top_level_7() {
+    let source = "
+example a b c = a b c
+";
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}

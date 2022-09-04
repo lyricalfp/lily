@@ -1,0 +1,69 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 22,
+                kind: ValueDeclaration(
+                    "example",
+                    [
+                        LesserPattern {
+                            begin: 9,
+                            end: 10,
+                            kind: Variable(
+                                "a",
+                            ),
+                        },
+                        LesserPattern {
+                            begin: 11,
+                            end: 12,
+                            kind: Variable(
+                                "b",
+                            ),
+                        },
+                        LesserPattern {
+                            begin: 13,
+                            end: 14,
+                            kind: Variable(
+                                "c",
+                            ),
+                        },
+                    ],
+                    Expression {
+                        begin: 17,
+                        end: 22,
+                        kind: Application(
+                            Expression {
+                                begin: 17,
+                                end: 18,
+                                kind: Variable(
+                                    "a",
+                                ),
+                            },
+                            [
+                                Expression {
+                                    begin: 19,
+                                    end: 20,
+                                    kind: Variable(
+                                        "b",
+                                    ),
+                                },
+                                Expression {
+                                    begin: 21,
+                                    end: 22,
+                                    kind: Variable(
+                                        "c",
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

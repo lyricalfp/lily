@@ -38,23 +38,8 @@ impl<'a> Cursor<'a> {
                 break Ok(lesser_patterns);
             }
 
-            if let TokenK::Operator(OperatorK::Underscore) = self.peek()?.kind {
-                let Token { begin, end, .. } = self.take()?;
-                lesser_patterns.push(LesserPattern {
-                    begin,
-                    end,
-                    kind: LesserPatternK::Null,
-                });
-                continue;
-            }
-
-            if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
-                let Token { begin, end, .. } = self.take()?;
-                lesser_patterns.push(LesserPattern {
-                    begin,
-                    end,
-                    kind: LesserPatternK::Variable(SmolStr::new(&self.source[begin..end])),
-                });
+            if let Ok(lesser_pattern) = self.lesser_pattern() {
+                lesser_patterns.push(lesser_pattern);
                 continue;
             }
 
