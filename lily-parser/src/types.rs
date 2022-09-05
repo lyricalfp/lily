@@ -69,6 +69,7 @@ pub struct Expression {
 pub enum ExpressionK {
     Application(Box<Expression>, Vec<Expression>),
     BinaryOperator(Box<Expression>, SmolStr, Box<Expression>),
+    CaseOf(Vec<Expression>, Vec<CaseArm>),
     Constructor(SmolStr),
     DoBlock(Vec<DoStatement>),
     IfThenElse(Box<Expression>, Box<Expression>, Box<Expression>),
@@ -90,6 +91,13 @@ pub enum DoStatementK {
     BindExpression(LesserPattern, Expression),
     DiscardExpression(Expression),
     LetStatement(Vec<Declaration>),
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CaseArm {
+    pub patterns: Vec<GreaterPattern>,
+    pub condition: Option<Expression>,
+    pub expression: Expression,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]

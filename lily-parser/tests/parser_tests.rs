@@ -86,3 +86,15 @@ example a b c = a b c
 ";
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+fn top_level_8() {
+    let source = "
+example = case a, b of
+  Cons a b, _ if hello -> do
+    world
+  _, Nil -> do
+    example
+";
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}

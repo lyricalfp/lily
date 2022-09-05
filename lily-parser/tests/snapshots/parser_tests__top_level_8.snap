@@ -1,0 +1,148 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 89,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 11,
+                        end: 89,
+                        kind: CaseOf(
+                            [
+                                Expression {
+                                    begin: 16,
+                                    end: 17,
+                                    kind: Variable(
+                                        "a",
+                                    ),
+                                },
+                                Expression {
+                                    begin: 19,
+                                    end: 20,
+                                    kind: Variable(
+                                        "b",
+                                    ),
+                                },
+                            ],
+                            [
+                                CaseArm {
+                                    patterns: [
+                                        GreaterPattern {
+                                            begin: 26,
+                                            end: 34,
+                                            kind: Application(
+                                                GreaterPattern {
+                                                    begin: 26,
+                                                    end: 30,
+                                                    kind: Constructor(
+                                                        "Cons",
+                                                    ),
+                                                },
+                                                [
+                                                    GreaterPattern {
+                                                        begin: 31,
+                                                        end: 32,
+                                                        kind: Variable(
+                                                            "a",
+                                                        ),
+                                                    },
+                                                    GreaterPattern {
+                                                        begin: 33,
+                                                        end: 34,
+                                                        kind: Variable(
+                                                            "b",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                        GreaterPattern {
+                                            begin: 36,
+                                            end: 37,
+                                            kind: Null,
+                                        },
+                                    ],
+                                    condition: Some(
+                                        Expression {
+                                            begin: 41,
+                                            end: 46,
+                                            kind: Variable(
+                                                "hello",
+                                            ),
+                                        },
+                                    ),
+                                    expression: Expression {
+                                        begin: 50,
+                                        end: 62,
+                                        kind: DoBlock(
+                                            [
+                                                DoStatement {
+                                                    begin: 57,
+                                                    end: 62,
+                                                    kind: DiscardExpression(
+                                                        Expression {
+                                                            begin: 57,
+                                                            end: 62,
+                                                            kind: Variable(
+                                                                "world",
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                },
+                                CaseArm {
+                                    patterns: [
+                                        GreaterPattern {
+                                            begin: 65,
+                                            end: 66,
+                                            kind: Null,
+                                        },
+                                        GreaterPattern {
+                                            begin: 68,
+                                            end: 71,
+                                            kind: Constructor(
+                                                "Nil",
+                                            ),
+                                        },
+                                    ],
+                                    condition: None,
+                                    expression: Expression {
+                                        begin: 75,
+                                        end: 89,
+                                        kind: DoBlock(
+                                            [
+                                                DoStatement {
+                                                    begin: 82,
+                                                    end: 89,
+                                                    kind: DiscardExpression(
+                                                        Expression {
+                                                            begin: 82,
+                                                            end: 89,
+                                                            kind: Variable(
+                                                                "example",
+                                                            ),
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

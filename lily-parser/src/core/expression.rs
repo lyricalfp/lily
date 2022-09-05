@@ -1,11 +1,13 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use lily_lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
     cursor::{expect_token, Cursor},
     errors::ParseError,
-    types::{Declaration, DoStatement, DoStatementK, Expression, ExpressionK, LesserPattern},
+    types::{
+        CaseArm, Declaration, DoStatement, DoStatementK, Expression, ExpressionK, LesserPattern,
+    },
 };
 
 impl<'a> Cursor<'a> {
@@ -175,12 +177,88 @@ impl<'a> Cursor<'a> {
         })
     }
 
+    fn expression_case(&mut self) -> anyhow::Result<Expression> {
+        let Token {
+            begin: case_begin, ..
+        } = expect_token!(self, TokenK::Identifier(IdentifierK::Case));
+
+        let expressions = self.expression_case_expressions()?;
+
+        expect_token!(self, TokenK::Layout(LayoutK::Begin));
+
+        let arms = self.expression_case_arms()?;
+
+        expect_token!(self, TokenK::Layout(LayoutK::End));
+
+        let case_end = arms
+            .last()
+            .context(ParseError::InternalError(
+                "Cannot determine last match arm".into(),
+            ))?
+            .expression
+            .end;
+
+        Ok(Expression {
+            begin: case_begin,
+            end: case_end,
+            kind: ExpressionK::CaseOf(expressions, arms),
+        })
+    }
+
+    fn expression_case_expressions(&mut self) -> anyhow::Result<Vec<Expression>> {
+        let mut expressions = vec![self.expression()?];
+        loop {
+            if let TokenK::Operator(OperatorK::Comma) = self.peek()?.kind {
+                self.take()?;
+                continue;
+            }
+            if let TokenK::Identifier(IdentifierK::Of) = self.peek()?.kind {
+                self.take()?;
+                break;
+            }
+            expressions.push(self.expression()?);
+        }
+        Ok(expressions)
+    }
+
+    fn expression_case_arm(&mut self) -> anyhow::Result<CaseArm> {
+        let patterns = self.greater_patterns()?;
+        let condition = if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
+            self.take()?;
+            Some(self.expression()?)
+        } else {
+            None
+        };
+        expect_token!(self, TokenK::Operator(OperatorK::ArrowRight));
+        let expression = self.expression()?;
+        expect_token!(self, TokenK::Layout(LayoutK::Separator));
+        Ok(CaseArm {
+            patterns,
+            condition,
+            expression,
+        })
+    }
+
+    fn expression_case_arms(&mut self) -> anyhow::Result<Vec<CaseArm>> {
+        let mut arms = vec![self.expression_case_arm()?];
+        loop {
+            if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
+                break;
+            }
+            arms.push(self.expression_case_arm()?);
+        }
+        Ok(arms)
+    }
+
     fn expression_core(&mut self, minimum_power: u8) -> anyhow::Result<Expression> {
         if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
             return self.expression_if();
         }
         if let TokenK::Identifier(IdentifierK::Do) = self.peek()?.kind {
             return self.expression_do();
+        }
+        if let TokenK::Identifier(IdentifierK::Case) = self.peek()?.kind {
+            return self.expression_case();
         }
 
         let mut accumulator = self.expression_atom()?;
@@ -194,6 +272,7 @@ impl<'a> Cursor<'a> {
                 let argument = match self.peek()?.kind {
                     TokenK::Identifier(IdentifierK::If) => self.expression_if()?,
                     TokenK::Identifier(IdentifierK::Do) => self.expression_do()?,
+                    TokenK::Identifier(IdentifierK::Case) => self.expression_case()?,
                     kind => bail!(ParseError::InternalError(format!(
                         "Unhandled block argument '{:?}'",
                         kind

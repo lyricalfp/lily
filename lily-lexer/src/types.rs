@@ -117,7 +117,8 @@ impl Token {
     pub fn is_expression_boundary(&self) -> bool {
         matches!(
             self.kind,
-            TokenK::Identifier(IdentifierK::Then | IdentifierK::Else)
+            TokenK::Identifier(IdentifierK::Then | IdentifierK::Else | IdentifierK::Of)
+                | TokenK::Operator(OperatorK::Comma | OperatorK::ArrowRight)
                 | TokenK::Layout(LayoutK::Separator)
                 | TokenK::CloseDelimiter(DelimiterK::Round)
         )
@@ -126,7 +127,7 @@ impl Token {
     pub fn is_block_argument(&self) -> bool {
         matches!(
             self.kind,
-            TokenK::Identifier(IdentifierK::If | IdentifierK::Do)
+            TokenK::Identifier(IdentifierK::If | IdentifierK::Do | IdentifierK::Case)
         )
     }
 
