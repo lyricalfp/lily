@@ -6,11 +6,11 @@ use crate::{
     cursor::Cursor,
     errors::ParseError,
     expect_token,
-    types::{Declaration, DeclarationK, FixityMap},
+    types::{Declaration, DeclarationK},
 };
 
 impl<'a> Cursor<'a> {
-    fn declaration_value(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Declaration> {
+    fn declaration_value(&mut self) -> anyhow::Result<Declaration> {
         let (declaration_begin, identifier) = {
             let Token { begin, end, .. } = self.take()?;
             (begin, SmolStr::new(&self.source[begin..end]))
@@ -20,7 +20,7 @@ impl<'a> Cursor<'a> {
         if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
             let _ = self.take()?;
             let (declaration_end, expression) = {
-                let expression = self.expression(fixity_map)?;
+                let expression = self.expression()?;
                 (expression.end, expression)
             };
             expect_token!(self, TokenK::Layout(LayoutK::Separator));
@@ -34,9 +34,9 @@ impl<'a> Cursor<'a> {
         bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }
 
-    pub fn declaration(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Declaration> {
+    pub fn declaration(&mut self) -> anyhow::Result<Declaration> {
         if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
-            return self.declaration_value(fixity_map);
+            return self.declaration_value();
         }
         bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }

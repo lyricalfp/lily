@@ -1,11 +1,11 @@
-use anyhow::{bail, Context};
+use anyhow::bail;
 use lily_lexer::types::{DelimiterK, DigitK, IdentifierK, OperatorK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
     cursor::{expect_token, Cursor},
     errors::ParseError,
-    types::{FixityMap, GreaterPattern, GreaterPatternK, LesserPattern, LesserPatternK},
+    types::{GreaterPattern, GreaterPatternK, LesserPattern, LesserPatternK},
 };
 
 impl<'a> Cursor<'a> {
@@ -49,7 +49,7 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    fn greater_pattern_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<GreaterPattern> {
+    fn greater_pattern_atom(&mut self) -> anyhow::Result<GreaterPattern> {
         let Token {
             begin, end, kind, ..
         } = self.take()?;
@@ -87,7 +87,7 @@ impl<'a> Cursor<'a> {
         }
 
         if let TokenK::OpenDelimiter(DelimiterK::Round) = kind {
-            let greater_pattern = self.greater_pattern_core(fixity_map, 0)?;
+            let greater_pattern = self.greater_pattern_core(0)?;
             let Token { end, .. } = expect_token!(self, TokenK::CloseDelimiter(DelimiterK::Round));
             return Ok(GreaterPattern {
                 begin,
@@ -99,12 +99,8 @@ impl<'a> Cursor<'a> {
         bail!(ParseError::UnexpectedToken(kind));
     }
 
-    fn greater_pattern_core(
-        &mut self,
-        fixity_map: &FixityMap,
-        minimum_power: u8,
-    ) -> anyhow::Result<GreaterPattern> {
-        let mut accumulator = self.greater_pattern_atom(fixity_map)?;
+    fn greater_pattern_core(&mut self, minimum_power: u8) -> anyhow::Result<GreaterPattern> {
+        let mut accumulator = self.greater_pattern_atom()?;
 
         loop {
             if self.peek()?.is_greater_pattern_boundary() {
@@ -121,10 +117,7 @@ impl<'a> Cursor<'a> {
                 let source_range = *begin..*end;
                 let operator = SmolStr::new(&self.source[source_range]);
 
-                let (left_power, right_power) = fixity_map
-                    .get(&operator)
-                    .context(ParseError::UnknownBindingPower(operator.clone()))?
-                    .as_pair();
+                let (left_power, right_power) = self.get_fixity(&operator)?;
 
                 if left_power < minimum_power {
                     break;
@@ -132,7 +125,7 @@ impl<'a> Cursor<'a> {
                     self.take()?;
                 }
 
-                let argument = self.greater_pattern_core(fixity_map, right_power)?;
+                let argument = self.greater_pattern_core(right_power)?;
                 accumulator = GreaterPattern {
                     begin: accumulator.begin,
                     end: argument.end,
@@ -145,7 +138,7 @@ impl<'a> Cursor<'a> {
                 continue;
             }
 
-            let argument = self.greater_pattern_atom(fixity_map)?;
+            let argument = self.greater_pattern_atom()?;
             match &mut accumulator.kind {
                 GreaterPatternK::Application(_, arguments) => {
                     accumulator.end = argument.end;
@@ -164,10 +157,7 @@ impl<'a> Cursor<'a> {
         Ok(accumulator)
     }
 
-    pub fn greater_patterns(
-        &mut self,
-        fixity_map: &FixityMap,
-    ) -> anyhow::Result<Vec<GreaterPattern>> {
+    pub fn greater_patterns(&mut self) -> anyhow::Result<Vec<GreaterPattern>> {
         let mut greater_patterns = vec![];
 
         loop {
@@ -182,7 +172,7 @@ impl<'a> Cursor<'a> {
                 break;
             }
 
-            greater_patterns.push(self.greater_pattern_core(fixity_map, 0)?);
+            greater_patterns.push(self.greater_pattern_core(0)?);
         }
 
         Ok(greater_patterns)

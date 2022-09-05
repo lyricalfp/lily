@@ -1,20 +1,26 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use lily_lexer::types::Token;
+use smol_str::SmolStr;
 
-use crate::errors::ParseError;
+use crate::{
+    errors::ParseError,
+    types::FixityMap,
+};
 
 pub struct Cursor<'a> {
     pub source: &'a str,
     tokens: &'a [Token],
     index: usize,
+    fixity_map: Option<&'a FixityMap>,
 }
 
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str, tokens: &'a [Token]) -> Self {
+    pub fn new(source: &'a str, tokens: &'a [Token], fixity_map: Option<&'a FixityMap>) -> Self {
         Self {
             source,
             tokens,
             index: 0,
+            fixity_map,
         }
     }
 
@@ -50,6 +56,15 @@ impl<'a> Cursor<'a> {
                 Err(err)
             }
         }
+    }
+
+    pub fn get_fixity(&self, operator: &SmolStr) -> anyhow::Result<(u8, u8)> {
+        Ok(self
+            .fixity_map
+            .context(ParseError::UnknownBindingPower(operator.clone()))?
+            .get(operator)
+            .context(ParseError::UnknownBindingPower(operator.clone()))?
+            .as_pair())
     }
 }
 

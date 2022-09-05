@@ -1,17 +1,15 @@
-use anyhow::{bail, Context};
+use anyhow::bail;
 use lily_lexer::types::{DelimiterK, DigitK, IdentifierK, LayoutK, OperatorK, Token, TokenK};
 use smol_str::SmolStr;
 
 use crate::{
     cursor::{expect_token, Cursor},
     errors::ParseError,
-    types::{
-        Declaration, DoStatement, DoStatementK, Expression, ExpressionK, FixityMap, LesserPattern,
-    },
+    types::{Declaration, DoStatement, DoStatementK, Expression, ExpressionK, LesserPattern},
 };
 
 impl<'a> Cursor<'a> {
-    fn expression_atom(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
+    fn expression_atom(&mut self) -> anyhow::Result<Expression> {
         let Token {
             begin, end, kind, ..
         } = self.take()?;
@@ -49,7 +47,7 @@ impl<'a> Cursor<'a> {
         }
 
         if let TokenK::OpenDelimiter(DelimiterK::Round) = kind {
-            let expression = self.expression_core(fixity_map, 0)?;
+            let expression = self.expression_core(0)?;
             let Token { end, .. } = expect_token!(self, TokenK::CloseDelimiter(DelimiterK::Round));
             return Ok(Expression {
                 begin,
@@ -61,17 +59,17 @@ impl<'a> Cursor<'a> {
         bail!(ParseError::UnexpectedToken(kind));
     }
 
-    fn expression_if(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
+    fn expression_if(&mut self) -> anyhow::Result<Expression> {
         let Token { begin, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::If));
-        let condition = self.expression(fixity_map)?;
+        let condition = self.expression()?;
 
         expect_token!(self, TokenK::Identifier(IdentifierK::Then));
-        let then_value = self.expression(fixity_map)?;
+        let then_value = self.expression()?;
 
         expect_token!(self, TokenK::Identifier(IdentifierK::Else));
-        let else_value @ Expression { end, .. } = self.expression(fixity_map)?;
+        let else_value @ Expression { end, .. } = self.expression()?;
 
-        return Ok(Expression {
+        Ok(Expression {
             begin,
             end,
             kind: ExpressionK::IfThenElse(
@@ -79,10 +77,10 @@ impl<'a> Cursor<'a> {
                 Box::new(then_value),
                 Box::new(else_value),
             ),
-        });
+        })
     }
 
-    fn expression_do(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
+    fn expression_do(&mut self) -> anyhow::Result<Expression> {
         let Token {
             begin: do_begin,
             end: do_end,
@@ -107,7 +105,7 @@ impl<'a> Cursor<'a> {
                     None => break do_end,
                 }
             }
-            statements.push(self.expression_do_statement(fixity_map)?);
+            statements.push(self.expression_do_statement()?);
         };
 
         Ok(Expression {
@@ -117,19 +115,19 @@ impl<'a> Cursor<'a> {
         })
     }
 
-    fn expression_do_statement(&mut self, fixity_map: &FixityMap) -> anyhow::Result<DoStatement> {
+    fn expression_do_statement(&mut self) -> anyhow::Result<DoStatement> {
         if let TokenK::Identifier(IdentifierK::Let) = self.peek()?.kind {
             let Token { begin, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::Let));
 
             expect_token!(self, TokenK::Layout(LayoutK::Begin));
 
-            let declaration @ Declaration { mut end, .. } = self.declaration(fixity_map)?;
+            let declaration @ Declaration { mut end, .. } = self.declaration()?;
             let mut declarations = vec![declaration];
             loop {
                 if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
                     break;
                 }
-                let declaration = self.declaration(fixity_map)?;
+                let declaration = self.declaration()?;
                 end = declaration.end;
                 declarations.push(declaration);
             }
@@ -144,41 +142,31 @@ impl<'a> Cursor<'a> {
             });
         }
 
-        if let do_statement @ Ok(_) =
-            self.attempt(|this| this.expression_do_statement_discard(fixity_map))
-        {
+        if let do_statement @ Ok(_) = self.attempt(|this| this.expression_do_statement_discard()) {
             return do_statement;
         }
 
-        if let do_statement @ Ok(_) =
-            self.attempt(|this| this.expression_do_statement_bind(fixity_map))
-        {
+        if let do_statement @ Ok(_) = self.attempt(|this| this.expression_do_statement_bind()) {
             return do_statement;
         }
 
         bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }
 
-    fn expression_do_statement_bind(
-        &mut self,
-        fixity_map: &FixityMap,
-    ) -> anyhow::Result<DoStatement> {
+    fn expression_do_statement_bind(&mut self) -> anyhow::Result<DoStatement> {
         let lesser_pattern @ LesserPattern { begin, .. } = self.lesser_pattern()?;
         expect_token!(self, TokenK::Operator(OperatorK::ArrowLeft));
-        let expression @ Expression { end, .. } = self.expression(fixity_map)?;
+        let expression @ Expression { end, .. } = self.expression()?;
         expect_token!(self, TokenK::Layout(LayoutK::Separator));
-        return Ok(DoStatement {
+        Ok(DoStatement {
             begin,
             end,
             kind: DoStatementK::BindExpression(lesser_pattern, expression),
-        });
+        })
     }
 
-    fn expression_do_statement_discard(
-        &mut self,
-        fixity_map: &FixityMap,
-    ) -> anyhow::Result<DoStatement> {
-        let expression @ Expression { begin, end, .. } = self.expression(fixity_map)?;
+    fn expression_do_statement_discard(&mut self) -> anyhow::Result<DoStatement> {
+        let expression @ Expression { begin, end, .. } = self.expression()?;
         expect_token!(self, TokenK::Layout(LayoutK::Separator));
         Ok(DoStatement {
             begin,
@@ -187,19 +175,15 @@ impl<'a> Cursor<'a> {
         })
     }
 
-    fn expression_core(
-        &mut self,
-        fixity_map: &FixityMap,
-        minimum_power: u8,
-    ) -> anyhow::Result<Expression> {
+    fn expression_core(&mut self, minimum_power: u8) -> anyhow::Result<Expression> {
         if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
-            return self.expression_if(fixity_map);
+            return self.expression_if();
         }
         if let TokenK::Identifier(IdentifierK::Do) = self.peek()?.kind {
-            return self.expression_do(fixity_map);
+            return self.expression_do();
         }
 
-        let mut accumulator = self.expression_atom(fixity_map)?;
+        let mut accumulator = self.expression_atom()?;
 
         loop {
             if self.peek()?.is_expression_boundary() {
@@ -208,8 +192,8 @@ impl<'a> Cursor<'a> {
 
             if self.peek()?.is_block_argument() {
                 let argument = match self.peek()?.kind {
-                    TokenK::Identifier(IdentifierK::If) => self.expression_if(fixity_map)?,
-                    TokenK::Identifier(IdentifierK::Do) => self.expression_do(fixity_map)?,
+                    TokenK::Identifier(IdentifierK::If) => self.expression_if()?,
+                    TokenK::Identifier(IdentifierK::Do) => self.expression_do()?,
                     kind => bail!(ParseError::InternalError(format!(
                         "Unhandled block argument '{:?}'",
                         kind
@@ -233,10 +217,7 @@ impl<'a> Cursor<'a> {
                 let source_range = *begin..*end;
                 let operator = SmolStr::new(&self.source[source_range]);
 
-                let (left_power, right_power) = fixity_map
-                    .get(&operator)
-                    .context(ParseError::UnknownBindingPower(operator.clone()))?
-                    .as_pair();
+                let (left_power, right_power) = self.get_fixity(&operator)?;
 
                 if left_power < minimum_power {
                     break;
@@ -244,7 +225,7 @@ impl<'a> Cursor<'a> {
                     self.take()?;
                 }
 
-                let argument = self.expression_core(fixity_map, right_power)?;
+                let argument = self.expression_core(right_power)?;
                 accumulator = Expression {
                     begin: accumulator.begin,
                     end: argument.end,
@@ -257,7 +238,7 @@ impl<'a> Cursor<'a> {
                 continue;
             }
 
-            let argument = self.expression_atom(fixity_map)?;
+            let argument = self.expression_atom()?;
             match &mut accumulator.kind {
                 ExpressionK::Application(_, arguments) => {
                     accumulator.end = argument.end;
@@ -276,7 +257,7 @@ impl<'a> Cursor<'a> {
         Ok(accumulator)
     }
 
-    pub fn expression(&mut self, fixity_map: &FixityMap) -> anyhow::Result<Expression> {
-        self.expression_core(fixity_map, 0)
+    pub fn expression(&mut self) -> anyhow::Result<Expression> {
+        self.expression_core(0)
     }
 }

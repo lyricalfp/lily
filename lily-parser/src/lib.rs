@@ -24,7 +24,7 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
 
     let mut fixity_map = FixityMap::default();
     for fixity_group in fixity_groups {
-        let mut cursor = Cursor::new(source, fixity_group);
+        let mut cursor = Cursor::new(source, fixity_group, None);
         let (operator, fixity) = cursor.fixity()?;
         fixity_map.insert(operator, fixity);
         debug_assert!(cursor.is_eof());
@@ -32,8 +32,8 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
 
     let mut declarations = vec![];
     for declaration_group in declaration_groups {
-        let mut cursor = Cursor::new(source, declaration_group);
-        declarations.push(cursor.declaration(&fixity_map)?);
+        let mut cursor = Cursor::new(source, declaration_group, Some(&fixity_map));
+        declarations.push(cursor.declaration()?);
         debug_assert!(cursor.is_eof());
     }
 
