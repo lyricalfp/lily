@@ -2,10 +2,7 @@ use anyhow::{bail, Context};
 use lily_lexer::types::Token;
 use smol_str::SmolStr;
 
-use crate::{
-    errors::ParseError,
-    types::FixityMap,
-};
+use crate::{errors::ParseError, types::FixityMap};
 
 pub struct Cursor<'a> {
     pub source: &'a str,
