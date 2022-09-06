@@ -127,7 +127,9 @@ impl Token {
     pub fn is_block_argument(&self) -> bool {
         matches!(
             self.kind,
-            TokenK::Identifier(IdentifierK::If | IdentifierK::Do | IdentifierK::Case)
+            TokenK::Identifier(
+                IdentifierK::If | IdentifierK::Do | IdentifierK::Case | IdentifierK::Let
+            )
         )
     }
 

@@ -72,9 +72,10 @@ pub enum ExpressionK {
     CaseOf(Vec<Expression>, Vec<CaseArm>),
     Constructor(SmolStr),
     DoBlock(Vec<DoStatement>),
+    Float(SmolStr),
     IfThenElse(Box<Expression>, Box<Expression>, Box<Expression>),
     Integer(SmolStr),
-    Float(SmolStr),
+    Let(Vec<Declaration>, Box<Expression>),
     Parenthesized(Box<Expression>),
     Variable(SmolStr),
 }

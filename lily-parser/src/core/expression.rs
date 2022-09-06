@@ -257,6 +257,34 @@ impl<'a> Cursor<'a> {
         Ok(arms)
     }
 
+    fn expression_let(&mut self) -> anyhow::Result<Expression> {
+        let Token {
+            begin: let_begin, ..
+        } = expect_token!(self, TokenK::Identifier(IdentifierK::Let));
+
+        expect_token!(self, TokenK::Layout(LayoutK::Begin));
+
+        let declarations = self.declaration_let_block()?;
+        let let_end = declarations
+            .last()
+            .context(ParseError::InternalError(
+                "Cannot determine last declaration".into(),
+            ))?
+            .end;
+
+        expect_token!(self, TokenK::Layout(LayoutK::End));
+
+        expect_token!(self, TokenK::Identifier(IdentifierK::In));
+
+        let expression = self.expression()?;
+
+        Ok(Expression {
+            begin: let_begin,
+            end: let_end,
+            kind: ExpressionK::Let(declarations, Box::new(expression)),
+        })
+    }
+
     fn expression_core(&mut self, minimum_power: u8) -> anyhow::Result<Expression> {
         if let TokenK::Identifier(IdentifierK::If) = self.peek()?.kind {
             return self.expression_if();
@@ -266,6 +294,9 @@ impl<'a> Cursor<'a> {
         }
         if let TokenK::Identifier(IdentifierK::Case) = self.peek()?.kind {
             return self.expression_case();
+        }
+        if let TokenK::Identifier(IdentifierK::Let) = self.peek()?.kind {
+            return self.expression_let();
         }
 
         let mut accumulator = self.expression_atom()?;
@@ -280,6 +311,7 @@ impl<'a> Cursor<'a> {
                     TokenK::Identifier(IdentifierK::If) => self.expression_if()?,
                     TokenK::Identifier(IdentifierK::Do) => self.expression_do()?,
                     TokenK::Identifier(IdentifierK::Case) => self.expression_case()?,
+                    TokenK::Identifier(IdentifierK::Let) => self.expression_let()?,
                     kind => bail!(ParseError::InternalError(format!(
                         "Unhandled block argument '{:?}'",
                         kind

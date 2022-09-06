@@ -1,0 +1,93 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 1,
+                end: 38,
+                kind: ValueDeclaration(
+                    "example",
+                    [],
+                    Expression {
+                        begin: 11,
+                        end: 38,
+                        kind: Application(
+                            Expression {
+                                begin: 11,
+                                end: 12,
+                                kind: Variable(
+                                    "f",
+                                ),
+                            },
+                            [
+                                Expression {
+                                    begin: 15,
+                                    end: 38,
+                                    kind: Let(
+                                        [
+                                            Declaration {
+                                                begin: 23,
+                                                end: 28,
+                                                kind: ValueDeclaration(
+                                                    "a",
+                                                    [],
+                                                    Expression {
+                                                        begin: 27,
+                                                        end: 28,
+                                                        kind: Variable(
+                                                            "b",
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                            Declaration {
+                                                begin: 33,
+                                                end: 38,
+                                                kind: ValueDeclaration(
+                                                    "c",
+                                                    [],
+                                                    Expression {
+                                                        begin: 37,
+                                                        end: 38,
+                                                        kind: Variable(
+                                                            "d",
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                        Expression {
+                                            begin: 48,
+                                            end: 51,
+                                            kind: Application(
+                                                Expression {
+                                                    begin: 48,
+                                                    end: 49,
+                                                    kind: Variable(
+                                                        "a",
+                                                    ),
+                                                },
+                                                [
+                                                    Expression {
+                                                        begin: 50,
+                                                        end: 51,
+                                                        kind: Variable(
+                                                            "c",
+                                                        ),
+                                                    },
+                                                ],
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ],
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

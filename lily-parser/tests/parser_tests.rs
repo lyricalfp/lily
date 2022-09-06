@@ -98,3 +98,16 @@ example = case a, b of
 ";
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+fn top_level_9() {
+    let source = "
+example = f
+  let
+    a = b
+    c = d
+  in
+    a c
+";
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}
