@@ -140,11 +140,11 @@ impl<'a> Cursor<'a> {
             });
         }
 
-        if let do_statement @ Ok(_) = self.attempt(|this| this.expression_do_statement_discard()) {
+        if let do_statement @ Ok(_) = self.attempt(Self::expression_do_statement_discard) {
             return do_statement;
         }
 
-        if let do_statement @ Ok(_) = self.attempt(|this| this.expression_do_statement_bind()) {
+        if let do_statement @ Ok(_) = self.attempt(Self::expression_do_statement_bind) {
             return do_statement;
         }
 
