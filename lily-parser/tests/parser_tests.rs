@@ -24,9 +24,10 @@ example = a + b + c
 pub fn top_level_2() {
     let source = r"
 infixl 1 add as +
-infixl 2 add as *
+infixl 2 mul as *
+infixr 3 pow as ^
 
-example = a + b * (c + d) + e
+example = a + b * (c + d) + e ^ f
 ";
 
     insta::assert_debug_snapshot!(parse_top_level(source));

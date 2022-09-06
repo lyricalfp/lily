@@ -6,58 +6,58 @@ Ok(
     Module {
         declarations: [
             Declaration {
-                begin: 38,
-                end: 67,
+                begin: 56,
+                end: 89,
                 kind: ValueDeclaration(
                     "example",
                     [],
                     Expression {
-                        begin: 48,
-                        end: 67,
+                        begin: 66,
+                        end: 89,
                         kind: BinaryOperator(
                             Expression {
-                                begin: 48,
-                                end: 63,
+                                begin: 66,
+                                end: 81,
                                 kind: BinaryOperator(
                                     Expression {
-                                        begin: 48,
-                                        end: 49,
+                                        begin: 66,
+                                        end: 67,
                                         kind: Variable(
                                             "a",
                                         ),
                                     },
                                     "+",
                                     Expression {
-                                        begin: 52,
-                                        end: 63,
+                                        begin: 70,
+                                        end: 81,
                                         kind: BinaryOperator(
                                             Expression {
-                                                begin: 52,
-                                                end: 53,
+                                                begin: 70,
+                                                end: 71,
                                                 kind: Variable(
                                                     "b",
                                                 ),
                                             },
                                             "*",
                                             Expression {
-                                                begin: 56,
-                                                end: 63,
+                                                begin: 74,
+                                                end: 81,
                                                 kind: Parenthesized(
                                                     Expression {
-                                                        begin: 57,
-                                                        end: 62,
+                                                        begin: 75,
+                                                        end: 80,
                                                         kind: BinaryOperator(
                                                             Expression {
-                                                                begin: 57,
-                                                                end: 58,
+                                                                begin: 75,
+                                                                end: 76,
                                                                 kind: Variable(
                                                                     "c",
                                                                 ),
                                                             },
                                                             "+",
                                                             Expression {
-                                                                begin: 61,
-                                                                end: 62,
+                                                                begin: 79,
+                                                                end: 80,
                                                                 kind: Variable(
                                                                     "d",
                                                                 ),
@@ -72,10 +72,24 @@ Ok(
                             },
                             "+",
                             Expression {
-                                begin: 66,
-                                end: 67,
-                                kind: Variable(
-                                    "e",
+                                begin: 84,
+                                end: 89,
+                                kind: BinaryOperator(
+                                    Expression {
+                                        begin: 84,
+                                        end: 85,
+                                        kind: Variable(
+                                            "e",
+                                        ),
+                                    },
+                                    "^",
+                                    Expression {
+                                        begin: 88,
+                                        end: 89,
+                                        kind: Variable(
+                                            "f",
+                                        ),
+                                    },
                                 ),
                             },
                         ),
