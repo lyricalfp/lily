@@ -96,21 +96,20 @@ impl<'a> Cursor<'a> {
         }
 
         expect_token!(self, TokenK::Layout(LayoutK::Begin));
-        let mut statements: Vec<DoStatement> = vec![];
-        let argument_end = loop {
-            if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
-                expect_token!(self, TokenK::Layout(LayoutK::End));
-                match statements.last() {
-                    Some(last) => break last.end,
-                    None => break do_end,
-                }
-            }
-            statements.push(self.expression_do_statement()?);
-        };
+
+        let statements = self.expression_do_statements()?;
+        let do_end = statements
+            .last()
+            .context(ParseError::InternalError(
+                "Cannot determine last do statement".into(),
+            ))?
+            .end;
+
+        expect_token!(self, TokenK::Layout(LayoutK::End));
 
         Ok(Expression {
             begin: do_begin,
-            end: argument_end,
+            end: do_end,
             kind: ExpressionK::DoBlock(statements),
         })
     }
@@ -172,6 +171,17 @@ impl<'a> Cursor<'a> {
             end,
             kind: DoStatementK::DiscardExpression(expression),
         })
+    }
+
+    fn expression_do_statements(&mut self) -> anyhow::Result<Vec<DoStatement>> {
+        let mut statements: Vec<DoStatement> = vec![];
+        loop {
+            if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
+                break;
+            }
+            statements.push(self.expression_do_statement()?);
+        }
+        Ok(statements)
     }
 
     fn expression_case(&mut self) -> anyhow::Result<Expression> {
