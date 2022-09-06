@@ -34,6 +34,24 @@ impl<'a> Cursor<'a> {
         bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }
 
+    pub fn declaration_let(&mut self) -> anyhow::Result<Declaration> {
+        if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
+            return self.declaration_value();
+        }
+        bail!(ParseError::UnexpectedToken(self.peek()?.kind))
+    }
+
+    pub fn declaration_let_block(&mut self) -> anyhow::Result<Vec<Declaration>> {
+        let mut declarations = vec![self.declaration_let()?];
+        loop {
+            if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
+                break;
+            }
+            declarations.push(self.declaration_let()?);
+        }
+        Ok(declarations)
+    }
+
     pub fn declaration(&mut self) -> anyhow::Result<Declaration> {
         if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
             return self.declaration_value();

@@ -5,9 +5,7 @@ use smol_str::SmolStr;
 use crate::{
     cursor::{expect_token, Cursor},
     errors::ParseError,
-    types::{
-        CaseArm, Declaration, DoStatement, DoStatementK, Expression, ExpressionK, LesserPattern,
-    },
+    types::{CaseArm, DoStatement, DoStatementK, Expression, ExpressionK, LesserPattern},
 };
 
 impl<'a> Cursor<'a> {
@@ -119,27 +117,26 @@ impl<'a> Cursor<'a> {
 
     fn expression_do_statement(&mut self) -> anyhow::Result<DoStatement> {
         if let TokenK::Identifier(IdentifierK::Let) = self.peek()?.kind {
-            let Token { begin, .. } = expect_token!(self, TokenK::Identifier(IdentifierK::Let));
+            let Token {
+                begin: let_begin, ..
+            } = expect_token!(self, TokenK::Identifier(IdentifierK::Let));
 
             expect_token!(self, TokenK::Layout(LayoutK::Begin));
 
-            let declaration @ Declaration { mut end, .. } = self.declaration()?;
-            let mut declarations = vec![declaration];
-            loop {
-                if let TokenK::Layout(LayoutK::End) = self.peek()?.kind {
-                    break;
-                }
-                let declaration = self.declaration()?;
-                end = declaration.end;
-                declarations.push(declaration);
-            }
+            let declarations = self.declaration_let_block()?;
+            let let_end = declarations
+                .last()
+                .context(ParseError::InternalError(
+                    "Cannot determine last declaration".into(),
+                ))?
+                .end;
 
             expect_token!(self, TokenK::Layout(LayoutK::End));
             expect_token!(self, TokenK::Layout(LayoutK::Separator));
 
             return Ok(DoStatement {
-                begin,
-                end,
+                begin: let_begin,
+                end: let_end,
                 kind: DoStatementK::LetStatement(declarations),
             });
         }
