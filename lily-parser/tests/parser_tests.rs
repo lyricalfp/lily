@@ -112,3 +112,13 @@ example = f
 ";
     insta::assert_debug_snapshot!(parse_top_level(source));
 }
+
+#[test]
+fn top_level_10() {
+    let source = "
+infixr 9 type Function as ->
+
+example : A a -> B -> C -> D (d e)
+";
+    insta::assert_debug_snapshot!(parse_top_level(source));
+}

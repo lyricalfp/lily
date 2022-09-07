@@ -107,6 +107,7 @@ impl<'a> Cursor<'a> {
                     "let" => IdentifierK::Let,
                     "of" => IdentifierK::Of,
                     "then" => IdentifierK::Then,
+                    "type" => IdentifierK::Type,
                     _ => IdentifierK::Lower,
                 })
             }

@@ -19,6 +19,7 @@ pub enum IdentifierK {
     Lower,
     Of,
     Then,
+    Type,
     Upper,
 }
 
@@ -130,6 +131,13 @@ impl Token {
             TokenK::Identifier(
                 IdentifierK::If | IdentifierK::Do | IdentifierK::Case | IdentifierK::Let
             )
+        )
+    }
+
+    pub fn is_ty_boundary(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenK::Layout(LayoutK::Separator) | TokenK::CloseDelimiter(DelimiterK::Round)
         )
     }
 

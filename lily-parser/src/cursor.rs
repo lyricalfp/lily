@@ -8,16 +8,23 @@ pub struct Cursor<'a> {
     pub source: &'a str,
     tokens: &'a [Token],
     index: usize,
-    fixity_map: Option<&'a FixityMap>,
+    value_fixities: Option<&'a FixityMap>,
+    type_fixities: Option<&'a FixityMap>,
 }
 
 impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str, tokens: &'a [Token], fixity_map: Option<&'a FixityMap>) -> Self {
+    pub fn new(
+        source: &'a str,
+        tokens: &'a [Token],
+        value_fixities: Option<&'a FixityMap>,
+        type_fixities: Option<&'a FixityMap>,
+    ) -> Self {
         Self {
             source,
             tokens,
             index: 0,
-            fixity_map,
+            value_fixities,
+            type_fixities,
         }
     }
 
@@ -57,7 +64,16 @@ impl<'a> Cursor<'a> {
 
     pub fn get_fixity(&self, operator: &SmolStr) -> anyhow::Result<(u8, u8)> {
         Ok(self
-            .fixity_map
+            .value_fixities
+            .context(ParseError::UnknownBindingPower(operator.clone()))?
+            .get(operator)
+            .context(ParseError::UnknownBindingPower(operator.clone()))?
+            .as_pair())
+    }
+
+    pub fn get_type_fixity(&self, operator: &SmolStr) -> anyhow::Result<(u8, u8)> {
+        Ok(self
+            .type_fixities
             .context(ParseError::UnknownBindingPower(operator.clone()))?
             .get(operator)
             .context(ParseError::UnknownBindingPower(operator.clone()))?

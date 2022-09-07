@@ -6,19 +6,33 @@ use crate::{
     cursor::Cursor,
     errors::ParseError,
     expect_token,
-    types::{Declaration, DeclarationK},
+    types::{Declaration, DeclarationK, Ty},
 };
 
 impl<'a> Cursor<'a> {
-    fn declaration_value(&mut self) -> anyhow::Result<Declaration> {
+    fn declaration_lower(&mut self) -> anyhow::Result<Declaration> {
         let (declaration_begin, identifier) = {
             let Token { begin, end, .. } = self.take()?;
             (begin, SmolStr::new(&self.source[begin..end]))
         };
 
+        if let TokenK::Operator(OperatorK::Colon) = self.peek()?.kind {
+            self.take()?;
+            let ty @ Ty {
+                end: declaration_end,
+                ..
+            } = self.ty()?;
+            expect_token!(self, TokenK::Layout(LayoutK::Separator));
+            return Ok(Declaration {
+                begin: declaration_begin,
+                end: declaration_end,
+                kind: DeclarationK::TypeDeclaration(identifier, ty),
+            });
+        }
+
         let lesser_patterns = self.lesser_patterns()?;
         if let TokenK::Operator(OperatorK::Equal) = self.peek()?.kind {
-            let _ = self.take()?;
+            self.take()?;
             let (declaration_end, expression) = {
                 let expression = self.expression()?;
                 (expression.end, expression)
@@ -36,7 +50,7 @@ impl<'a> Cursor<'a> {
 
     pub fn declaration_let(&mut self) -> anyhow::Result<Declaration> {
         if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
-            return self.declaration_value();
+            return self.declaration_lower();
         }
         bail!(ParseError::UnexpectedToken(self.peek()?.kind))
     }
@@ -54,7 +68,7 @@ impl<'a> Cursor<'a> {
 
     pub fn declaration(&mut self) -> anyhow::Result<Declaration> {
         if let TokenK::Identifier(IdentifierK::Lower) = self.peek()?.kind {
-            return self.declaration_value();
+            return self.declaration_lower();
         }
         bail!(ParseError::UnexpectedToken(self.peek()?.kind));
     }

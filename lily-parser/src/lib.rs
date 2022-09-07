@@ -6,7 +6,10 @@ pub mod types;
 use lily_lexer::{lex, types::Token};
 use types::Module;
 
-use crate::{cursor::Cursor, types::FixityMap};
+use crate::{
+    cursor::Cursor,
+    types::{Domain, FixityMap},
+};
 
 pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
     let tokens = lex(source);
@@ -22,17 +25,27 @@ pub fn parse_top_level(source: &str) -> anyhow::Result<Module> {
         }
     }
 
-    let mut fixity_map = FixityMap::default();
+    let mut value_fixities = FixityMap::default();
+    let mut type_fixities = FixityMap::default();
+
     for fixity_group in fixity_groups {
-        let mut cursor = Cursor::new(source, fixity_group, None);
+        let mut cursor = Cursor::new(source, fixity_group, None, None);
         let (operator, fixity) = cursor.fixity()?;
-        fixity_map.insert(operator, fixity);
+        match fixity.domain {
+            Domain::Type => type_fixities.insert(operator, fixity),
+            Domain::Value => value_fixities.insert(operator, fixity),
+        };
         debug_assert!(cursor.is_eof());
     }
 
     let mut declarations = vec![];
     for declaration_group in declaration_groups {
-        let mut cursor = Cursor::new(source, declaration_group, Some(&fixity_map));
+        let mut cursor = Cursor::new(
+            source,
+            declaration_group,
+            Some(&value_fixities),
+            Some(&type_fixities),
+        );
         declarations.push(cursor.declaration()?);
         debug_assert!(cursor.is_eof());
     }

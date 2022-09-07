@@ -1,0 +1,117 @@
+---
+source: lily-parser/tests/parser_tests.rs
+expression: parse_top_level(source)
+---
+Ok(
+    Module {
+        declarations: [
+            Declaration {
+                begin: 31,
+                end: 59,
+                kind: TypeDeclaration(
+                    "example",
+                    Ty {
+                        begin: 41,
+                        end: 59,
+                        kind: BinaryOperator(
+                            Ty {
+                                begin: 41,
+                                end: 42,
+                                kind: Application(
+                                    Ty {
+                                        begin: 41,
+                                        end: 42,
+                                        kind: Constructor(
+                                            "A",
+                                        ),
+                                    },
+                                    [
+                                        Ty {
+                                            begin: 43,
+                                            end: 44,
+                                            kind: Variable(
+                                                "a",
+                                            ),
+                                        },
+                                    ],
+                                ),
+                            },
+                            "->",
+                            Ty {
+                                begin: 48,
+                                end: 59,
+                                kind: BinaryOperator(
+                                    Ty {
+                                        begin: 48,
+                                        end: 49,
+                                        kind: Constructor(
+                                            "B",
+                                        ),
+                                    },
+                                    "->",
+                                    Ty {
+                                        begin: 53,
+                                        end: 59,
+                                        kind: BinaryOperator(
+                                            Ty {
+                                                begin: 53,
+                                                end: 54,
+                                                kind: Constructor(
+                                                    "C",
+                                                ),
+                                            },
+                                            "->",
+                                            Ty {
+                                                begin: 58,
+                                                end: 59,
+                                                kind: Application(
+                                                    Ty {
+                                                        begin: 58,
+                                                        end: 59,
+                                                        kind: Constructor(
+                                                            "D",
+                                                        ),
+                                                    },
+                                                    [
+                                                        Ty {
+                                                            begin: 60,
+                                                            end: 65,
+                                                            kind: Parenthesized(
+                                                                Ty {
+                                                                    begin: 61,
+                                                                    end: 62,
+                                                                    kind: Application(
+                                                                        Ty {
+                                                                            begin: 61,
+                                                                            end: 62,
+                                                                            kind: Variable(
+                                                                                "d",
+                                                                            ),
+                                                                        },
+                                                                        [
+                                                                            Ty {
+                                                                                begin: 63,
+                                                                                end: 64,
+                                                                                kind: Variable(
+                                                                                    "e",
+                                                                                ),
+                                                                            },
+                                                                        ],
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        },
+                                                    ],
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            },
+        ],
+    },
+)

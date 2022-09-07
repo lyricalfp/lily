@@ -1,17 +1,24 @@
 use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Associativity {
     Infixl,
     Infixr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Domain {
+    Type,
+    Value,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Fixity {
     pub begin: usize,
     pub end: usize,
     pub associativity: Associativity,
+    pub domain: Domain,
     pub binding_power: u8,
     pub identifier: SmolStr,
 }
@@ -102,6 +109,22 @@ pub struct CaseArm {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Ty {
+    pub begin: usize,
+    pub end: usize,
+    pub kind: TyK,
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TyK {
+    Application(Box<Ty>, Vec<Ty>),
+    BinaryOperator(Box<Ty>, SmolStr, Box<Ty>),
+    Constructor(SmolStr),
+    Parenthesized(Box<Ty>),
+    Variable(SmolStr),
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Declaration {
     pub begin: usize,
     pub end: usize,
@@ -111,6 +134,7 @@ pub struct Declaration {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DeclarationK {
     ValueDeclaration(SmolStr, Vec<LesserPattern>, Expression),
+    TypeDeclaration(SmolStr, Ty),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
